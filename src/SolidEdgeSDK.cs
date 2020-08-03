@@ -4,6 +4,8 @@
 //
 
 // This file is maintained at https://github.com/SolidEdgeCommunity/SDK.
+// You are welcome to copy\modify this file for your own needs but you are encouraged
+// to contribute back to the community by submitting a pull requests with enhancements.
 
 using Microsoft.Win32;
 using SolidEdgeSDK.Extensions;

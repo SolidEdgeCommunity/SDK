@@ -1,4 +1,11 @@
-﻿using Microsoft.Win32;
+//
+// Licensed under the MIT license.
+// See https://github.com/SolidEdgeCommunity/SDK/blob/master/LICENSE for full license information.
+//
+
+// This file is maintained at https://github.com/SolidEdgeCommunity/SDK.
+
+using Microsoft.Win32;
 using SolidEdgeSDK.Extensions;
 using SolidEdgeSDK.InteropServices;
 using System;

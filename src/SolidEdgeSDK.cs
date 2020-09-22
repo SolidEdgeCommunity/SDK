@@ -1,31 +1,31 @@
 //
-// Licensed under the MIT license.
-// See https://github.com/SolidEdgeCommunity/SDK/blob/master/LICENSE for full license information.
-//
-
 // This file is maintained at https://github.com/SolidEdgeCommunity/SDK.
-// You are welcome to copy\modify this file for your own needs but you are encouraged
-// to contribute back to the community by submitting a pull requests with enhancements.
+//
+// Licensed under the MIT license.
+// See https://github.com/SolidEdgeCommunity/SDK/blob/master/LICENSE for full
+// license information.
+//
+// Required references:
+//  - System.Core.dll
+//  - System.Drawing.dll
+//  - System.Windows.Forms.dll
+//
+// Required Solid Edge types from COM references:
+//      - assembly.tlb
+//      - constant.tlb
+//      - draft.tlb
+//      - framewrk.tlb
+//      - fwksupp.tlb
+//      - geometry.tlb
+//      - Part.tlb
+// It does not matter how you import these types to .NET. You can reference the
+// type libraries directly from your project or pre generate the Interop
+// Assemblies.
 
-// Requires references to System.Drawing.dll & System.Windows.Forms.dll
-
-using Microsoft.Win32;
-using SolidEdgeAssembly;
-using SolidEdgeFramework;
-using SolidEdgeGeometry;
-using SolidEdgeSDK.Extensions;
-using SolidEdgeSDK.InteropServices;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
-using System.Resources;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
-using System.Text;
-using System.Threading;
 
 namespace SolidEdgeSDK
 {
@@ -595,16 +595,16 @@ namespace SolidEdgeSDK.AddIn
         {
         }
 
-        public AddInDescriptor(CultureInfo culture, Type resourceType)
+        public AddInDescriptor(System.Globalization.CultureInfo culture, Type resourceType)
         {
             Culture = culture;
 
-            var resourceManager = new ResourceManager(resourceType.FullName, resourceType.Assembly);
+            var resourceManager = new System.Resources.ResourceManager(resourceType.FullName, resourceType.Assembly);
             Description = resourceManager.GetString("AddInDescription", Culture);
             Summary = resourceManager.GetString("AddInSummary", Culture);
         }
 
-        public CultureInfo Culture { get; set; }
+        public System.Globalization.CultureInfo Culture { get; set; }
         public string Description { get; set; }
         public string Summary { get; set; }
     }
@@ -646,10 +646,10 @@ namespace SolidEdgeSDK.AddIn
     {
         public AddInCultureAttribute(string culture)
         {
-            Value = new CultureInfo(culture);
+            Value = new System.Globalization.CultureInfo(culture);
         }
 
-        public CultureInfo Value { get; private set; }
+        public System.Globalization.CultureInfo Value { get; private set; }
     }
 
     public sealed class ComRegistrationSettings
@@ -1207,13 +1207,13 @@ namespace SolidEdgeSDK.AddIn
         public static void ComUnregisterSolidEdgeAddIn(Type t)
         {
             string subkey = String.Join(@"\", "CLSID", t.GUID.ToString("B"));
-            Registry.ClassesRoot.DeleteSubKeyTree(subkey, false);
+            Microsoft.Win32.Registry.ClassesRoot.DeleteSubKeyTree(subkey, false);
         }
 
-        static RegistryKey CreateBaseKey(Guid guid)
+        static Microsoft.Win32.RegistryKey CreateBaseKey(Guid guid)
         {
             string subkey = String.Join(@"\", "CLSID", guid.ToString("B"));
-            return Registry.ClassesRoot.CreateSubKey(subkey);
+            return Microsoft.Win32.Registry.ClassesRoot.CreateSubKey(subkey);
         }
 
         /// <summary>
@@ -1325,7 +1325,7 @@ namespace SolidEdgeSDK.AddIn
         internal RibbonController(SolidEdgeAddIn addIn)
         {
             SolidEdgeAddIn = addIn ?? throw new ArgumentNullException(nameof(addIn));
-            ComEventsManager = new ComEventsManager(this);
+            ComEventsManager = new SolidEdgeSDK.InteropServices.ComEventsManager(this);
 
             if (SolidEdgeAddIn.SolidEdgeVersion.Major <= 105)
             {
@@ -1533,7 +1533,7 @@ namespace SolidEdgeSDK.AddIn
                         var categoryName = tab.Name;
 
                         // Properly format the command name string.
-                        StringBuilder commandName = new StringBuilder();
+                        var commandName = new System.Text.StringBuilder();
 
                         // Note: The command will not be added if it the name is not unique!
                         commandName.AppendFormat("{0}_{1}", SolidEdgeAddIn.Guid.ToString(), control.CommandId);
@@ -1648,7 +1648,7 @@ namespace SolidEdgeSDK.AddIn
             get
             {
                 var application = SolidEdgeAddIn.Application;
-                var environment = application.GetActiveEnvironment();
+                var environment = SolidEdgeSDK.Extensions.ApplicationExtensions.GetActiveEnvironment(application);
                 var envCatId = Guid.Parse(environment.CATID);
                 return _ribbons.Where(x => x.EnvironmentCategory.Equals(envCatId)).FirstOrDefault();
             }
@@ -1660,7 +1660,7 @@ namespace SolidEdgeSDK.AddIn
         public IEnumerable<Ribbon> Ribbons { get { return _ribbons.AsEnumerable(); } }
 
         public SolidEdgeAddIn SolidEdgeAddIn { get; private set; }
-        public ComEventsManager ComEventsManager { get; set; }
+        public SolidEdgeSDK.InteropServices.ComEventsManager ComEventsManager { get; set; }
 
         #endregion
 
@@ -2166,9 +2166,9 @@ namespace SolidEdgeSDK.Extensions
         /// <summary>
         /// Returns a Process object that represents the application prcoess.
         /// </summary>
-        public static Process GetProcess(this SolidEdgeFramework.Application application)
+        public static System.Diagnostics.Process GetProcess(this SolidEdgeFramework.Application application)
         {
-            return Process.GetProcessById(application.ProcessID);
+            return System.Diagnostics.Process.GetProcessById(application.ProcessID);
         }
 
         /// <summary>
@@ -2400,7 +2400,7 @@ namespace SolidEdgeSDK.InteropServices
 
             try
             {
-                Monitor.Enter(this, ref lockTaken);
+                System.Threading.Monitor.Enter(this, ref lockTaken);
 
                 // Prevent multiple event Advise() calls on same sink.
                 if (IsAttached<TInterface>(container))
@@ -2408,11 +2408,11 @@ namespace SolidEdgeSDK.InteropServices
                     return;
                 }
 
-                IConnectionPointContainer cpc = null;
-                IConnectionPoint cp = null;
+                System.Runtime.InteropServices.ComTypes.IConnectionPointContainer cpc = null;
+                System.Runtime.InteropServices.ComTypes.IConnectionPoint cp = null;
                 int cookie = 0;
 
-                cpc = (IConnectionPointContainer)container;
+                cpc = (System.Runtime.InteropServices.ComTypes.IConnectionPointContainer)container;
                 cpc.FindConnectionPoint(typeof(TInterface).GUID, out cp);
 
                 if (cp != null)
@@ -2425,7 +2425,7 @@ namespace SolidEdgeSDK.InteropServices
             {
                 if (lockTaken)
                 {
-                    Monitor.Exit(this);
+                    System.Threading.Monitor.Exit(this);
                 }
             }
         }
@@ -2440,13 +2440,13 @@ namespace SolidEdgeSDK.InteropServices
 
             try
             {
-                Monitor.Enter(this, ref lockTaken);
+                System.Threading.Monitor.Enter(this, ref lockTaken);
 
-                IConnectionPointContainer cpc = null;
-                IConnectionPoint cp = null;
+                System.Runtime.InteropServices.ComTypes.IConnectionPointContainer cpc = null;
+                System.Runtime.InteropServices.ComTypes.IConnectionPoint cp = null;
                 int cookie = 0;
 
-                cpc = (IConnectionPointContainer)container;
+                cpc = (System.Runtime.InteropServices.ComTypes.IConnectionPointContainer)container;
                 cpc.FindConnectionPoint(typeof(TInterface).GUID, out cp);
 
                 if (cp != null)
@@ -2462,7 +2462,7 @@ namespace SolidEdgeSDK.InteropServices
             {
                 if (lockTaken)
                 {
-                    Monitor.Exit(this);
+                    System.Threading.Monitor.Exit(this);
                 }
             }
 
@@ -2480,13 +2480,13 @@ namespace SolidEdgeSDK.InteropServices
 
             try
             {
-                Monitor.Enter(this, ref lockTaken);
+                System.Threading.Monitor.Enter(this, ref lockTaken);
 
-                IConnectionPointContainer cpc = null;
-                IConnectionPoint cp = null;
+                System.Runtime.InteropServices.ComTypes.IConnectionPointContainer cpc = null;
+                System.Runtime.InteropServices.ComTypes.IConnectionPoint cp = null;
                 int cookie = 0;
 
-                cpc = (IConnectionPointContainer)container;
+                cpc = (System.Runtime.InteropServices.ComTypes.IConnectionPointContainer)container;
                 cpc.FindConnectionPoint(typeof(TInterface).GUID, out cp);
 
                 if (cp != null)
@@ -2503,7 +2503,7 @@ namespace SolidEdgeSDK.InteropServices
             {
                 if (lockTaken)
                 {
-                    Monitor.Exit(this);
+                    System.Threading.Monitor.Exit(this);
                 }
             }
         }
@@ -2517,8 +2517,8 @@ namespace SolidEdgeSDK.InteropServices
 
             try
             {
-                Monitor.Enter(this, ref lockTaken);
-                Dictionary<IConnectionPoint, int>.Enumerator enumerator = ConnectionPoints.GetEnumerator();
+                System.Threading.Monitor.Enter(this, ref lockTaken);
+                Dictionary<System.Runtime.InteropServices.ComTypes.IConnectionPoint, int>.Enumerator enumerator = ConnectionPoints.GetEnumerator();
                 while (enumerator.MoveNext())
                 {
                     enumerator.Current.Key.Unadvise(enumerator.Current.Value);
@@ -2530,13 +2530,13 @@ namespace SolidEdgeSDK.InteropServices
 
                 if (lockTaken)
                 {
-                    Monitor.Exit(this);
+                    System.Threading.Monitor.Exit(this);
                 }
             }
         }
 
         public object Sink { get; private set; }
-        public Dictionary<IConnectionPoint, int> ConnectionPoints { get; private set; } = new Dictionary<IConnectionPoint, int>();
+        public Dictionary<System.Runtime.InteropServices.ComTypes.IConnectionPoint, int> ConnectionPoints { get; private set; } = new Dictionary<System.Runtime.InteropServices.ComTypes.IConnectionPoint, int>();
     }
 
     /// <summary>
@@ -2551,7 +2551,7 @@ namespace SolidEdgeSDK.InteropServices
         /// </summary>
         /// <param name="comObject"></param>
         /// <returns></returns>
-        public static ITypeInfo GetITypeInfo(object comObject)
+        public static System.Runtime.InteropServices.ComTypes.ITypeInfo GetITypeInfo(object comObject)
         {
             if (Marshal.IsComObject(comObject) == false) throw new InvalidComObjectException();
 
@@ -2618,7 +2618,7 @@ namespace SolidEdgeSDK.InteropServices
 
             Type type = null;
             var dispatch = comObject as IDispatch;
-            ITypeInfo typeInfo = null;
+            System.Runtime.InteropServices.ComTypes.ITypeInfo typeInfo = null;
             var pTypeAttr = IntPtr.Zero;
             var typeAttr = default(System.Runtime.InteropServices.ComTypes.TYPEATTR);
 
@@ -2668,6 +2668,6 @@ namespace SolidEdgeSDK.InteropServices
     interface IDispatch
     {
         int GetTypeInfoCount();
-        ITypeInfo GetTypeInfo(int iTInfo, int lcid);
+        System.Runtime.InteropServices.ComTypes.ITypeInfo GetTypeInfo(int iTInfo, int lcid);
     }
 }

@@ -7,8 +7,7 @@
 // You are welcome to copy\modify this file for your own needs but you are encouraged
 // to contribute back to the community by submitting a pull requests with enhancements.
 
-// Requires additional references to PresentationCore.dll, PresentationFramework.dll & WindowsBase.dll.
-//#define SE_SDK_WPF_SUPPORT
+// Requires references to System.Drawing.dll & System.Windows.Forms.dll
 
 using Microsoft.Win32;
 using SolidEdgeAssembly;
@@ -668,7 +667,7 @@ namespace SolidEdgeSDK.AddIn
         public AddInDescriptor[] Descriptors { get; set; } = new AddInDescriptor[] { };
     }
 
-    public class EdgeBarController : IDisposable
+    public partial class EdgeBarController : IDisposable
     {
         private bool _disposed = false;
 
@@ -705,48 +704,6 @@ namespace SolidEdgeSDK.AddIn
 
             return edgeBarPage;
         }
-
-#if SE_SDK_WPF_SUPPORT
-
-        public EdgeBarPage AddWpfPage<TControl>(EdgeBarPageConfiguration config) where TControl : System.Windows.Controls.Page, new()
-        {
-            return AddWpfPage<TControl>(
-                config: config,
-                document: null);
-        }
-
-        public EdgeBarPage AddWpfPage<TControl>(EdgeBarPageConfiguration config, SolidEdgeFramework.SolidEdgeDocument document) where TControl : System.Windows.Controls.Page, new()
-        {
-            uint WS_VISIBLE = 0x10000000;
-            uint WS_CHILD = 0x40000000;
-            uint WS_MAXIMIZE = 0x01000000;
-
-            TControl control = Activator.CreateInstance<TControl>();
-
-            var edgeBarPage = AddPage(
-                config: config,
-                controlHandle: IntPtr.Zero,
-                document: document);
-
-            var hwndSource = new System.Windows.Interop.HwndSource(new System.Windows.Interop.HwndSourceParameters
-            {
-                PositionX = 0,
-                PositionY = 0,
-                Height = 0,
-                Width = 0,
-                ParentWindow = edgeBarPage.Handle,
-                WindowStyle = (int)(WS_VISIBLE | WS_CHILD | WS_MAXIMIZE)
-            })
-            {
-                RootVisual = control
-            };
-
-            edgeBarPage.ChildObject = hwndSource;
-
-            return edgeBarPage;
-        }
-
-#endif
 
         public EdgeBarPage AddPage(EdgeBarPageConfiguration config, IntPtr controlHandle, SolidEdgeFramework.SolidEdgeDocument document)
         {

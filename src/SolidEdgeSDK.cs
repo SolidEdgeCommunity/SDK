@@ -5,7 +5,13 @@
 
 // This file is maintained at https://github.com/SolidEdgeCommunity/SDK.
 
+// Requires additional references to PresentationCore.dll, PresentationFramework.dll & WindowsBase.dll.
+//#define SE_SDK_WPF_SUPPORT
+
 using Microsoft.Win32;
+using SolidEdgeAssembly;
+using SolidEdgeFramework;
+using SolidEdgeGeometry;
 using SolidEdgeSDK.Extensions;
 using SolidEdgeSDK.InteropServices;
 using System;
@@ -19,7 +25,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading;
-using System.Windows.Forms;
 
 namespace SolidEdgeSDK
 {
@@ -245,7 +250,7 @@ namespace SolidEdgeSDK
     }
 }
 
-namespace SolidEdgeSDK
+namespace SolidEdgeSDK.AddIn
 {
     public class AddInDescriptor
     {
@@ -268,7 +273,7 @@ namespace SolidEdgeSDK
     }
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
-    public class AddInEnvironmentCategoryAttribute : Attribute
+    public class AddInEnvironmentCategoryAttribute : System.Attribute
     {
         public AddInEnvironmentCategoryAttribute(string guid)
             : this(new Guid(guid))
@@ -284,7 +289,7 @@ namespace SolidEdgeSDK
     }
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
-    public class AddInImplementedCategoryAttribute : Attribute
+    public class AddInImplementedCategoryAttribute : System.Attribute
     {
         public AddInImplementedCategoryAttribute(string guid)
             : this(new Guid(guid))
@@ -300,7 +305,7 @@ namespace SolidEdgeSDK
     }
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
-    public sealed class AddInCultureAttribute : Attribute
+    public sealed class AddInCultureAttribute : System.Attribute
     {
         public AddInCultureAttribute(string culture)
         {
@@ -325,7 +330,218 @@ namespace SolidEdgeSDK
         public AddInDescriptor[] Descriptors { get; set; } = new AddInDescriptor[] { };
     }
 
-    public class EdgeBarPage : NativeWindow, IDisposable
+    public class EdgeBarController : IDisposable
+    {
+        private bool _disposed = false;
+
+        internal EdgeBarController(SolidEdgeAddIn addIn)
+        {
+            SolidEdgeAddIn = addIn ?? throw new ArgumentNullException(nameof(addIn));
+        }
+
+        /// <summary>
+        /// Destructor
+        /// </summary>
+        ~EdgeBarController()
+        {
+            Dispose(false);
+        }
+
+        public EdgeBarPage AddWinFormPage<TControl>(EdgeBarPageConfiguration config) where TControl : System.Windows.Forms.Control, new()
+        {
+            return AddWinFormPage<TControl>(
+                config: config,
+                document: null);
+        }
+
+        public EdgeBarPage AddWinFormPage<TControl>(EdgeBarPageConfiguration config, SolidEdgeFramework.SolidEdgeDocument document) where TControl : System.Windows.Forms.Control, new()
+        {
+            TControl control = Activator.CreateInstance<TControl>();
+
+            var edgeBarPage = AddPage(
+                config: config,
+                controlHandle: control.Handle,
+                document: document);
+
+            edgeBarPage.ChildObject = control;
+
+            return edgeBarPage;
+        }
+
+#if SE_SDK_WPF_SUPPORT
+
+        public EdgeBarPage AddWpfPage<TControl>(EdgeBarPageConfiguration config) where TControl : System.Windows.Controls.Page, new()
+        {
+            return AddWpfPage<TControl>(
+                config: config,
+                document: null);
+        }
+
+        public EdgeBarPage AddWpfPage<TControl>(EdgeBarPageConfiguration config, SolidEdgeFramework.SolidEdgeDocument document) where TControl : System.Windows.Controls.Page, new()
+        {
+            uint WS_VISIBLE = 0x10000000;
+            uint WS_CHILD = 0x40000000;
+            uint WS_MAXIMIZE = 0x01000000;
+
+            TControl control = Activator.CreateInstance<TControl>();
+
+            var edgeBarPage = AddPage(
+                config: config,
+                controlHandle: IntPtr.Zero,
+                document: document);
+
+            var hwndSource = new System.Windows.Interop.HwndSource(new System.Windows.Interop.HwndSourceParameters
+            {
+                PositionX = 0,
+                PositionY = 0,
+                Height = 0,
+                Width = 0,
+                ParentWindow = edgeBarPage.Handle,
+                WindowStyle = (int)(WS_VISIBLE | WS_CHILD | WS_MAXIMIZE)
+            })
+            {
+                RootVisual = control
+            };
+
+            edgeBarPage.ChildObject = hwndSource;
+
+            return edgeBarPage;
+        }
+
+#endif
+
+        public EdgeBarPage AddPage(EdgeBarPageConfiguration config, IntPtr controlHandle, SolidEdgeFramework.SolidEdgeDocument document)
+        {
+            if (config == null) throw new ArgumentNullException(nameof(config));
+
+            var options = (int)config.GetOptions(document);
+            var direction = (int)config.Direction;
+
+            var hWndEdgeBarPage = SolidEdgeAddIn.EdgeBarEx2.AddPageEx2(
+                theDocument: document,
+                ResourceFilename: config.NativeResourcesDllPath,
+                Index: config.Index,
+                nBitmapID: config.NativeImageId,
+                Tooltip: config.Tootip,
+                Title: config.Title,
+                Caption: config.Caption,
+                nOptions: options,
+                Direction: direction);
+
+            var edgeBarPage = new EdgeBarPage(new IntPtr(hWndEdgeBarPage), config.Index)
+            {
+                ChildWindowHandle = controlHandle,
+                Document = document
+            };
+
+            EdgeBarPages.Add(edgeBarPage);
+
+            return edgeBarPage;
+        }
+
+        public void RemoveAllPages()
+        {
+            var edgeBarPages = EdgeBarPages.ToArray();
+
+            foreach (var edgeBarPage in edgeBarPages)
+            {
+                RemovePage(edgeBarPage);
+            }
+        }
+
+        public void RemoveDocumentPages(SolidEdgeFramework.SolidEdgeDocument document)
+        {
+            if (document == null) throw new ArgumentNullException(nameof(document));
+
+            var edgeBarPages = DocumentEdgeBarPages.Where(x => x.Document == document);
+
+            foreach (var edgeBarPage in edgeBarPages)
+            {
+                RemovePage(edgeBarPage);
+            }
+        }
+
+        public void RemoveGlobalPages()
+        {
+            var edgeBarPages = GlobalEdgeBarPages.ToArray();
+
+            foreach (var edgeBarPage in edgeBarPages)
+            {
+                RemovePage(edgeBarPage);
+            }
+        }
+
+        private void RemovePage(EdgeBarPage edgeBarPage)
+        {
+            int hWnd = edgeBarPage.Handle.ToInt32();
+
+            try
+            {
+                SolidEdgeAddIn.EdgeBarEx2.RemovePage(edgeBarPage.Document, hWnd, 0);
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                edgeBarPage.Dispose();
+            }
+            catch
+            {
+            }
+
+            EdgeBarPages.Remove(edgeBarPage);
+        }
+
+        #region IDisposable implementation
+
+        /// <summary>
+        /// Disposes resources.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        void Dispose(bool disposing)
+        {
+            if (_disposed) return;
+
+            if (disposing)
+            {
+                // Free managed objects here.
+                EdgeBarPages.Clear();
+            }
+
+            // Free unmanaged objects here.
+            _disposed = true;
+        }
+
+        #endregion
+
+        public SolidEdgeAddIn SolidEdgeAddIn { get; private set; }
+        private List<EdgeBarPage> EdgeBarPages { get; set; } = new List<EdgeBarPage>();
+
+        public EdgeBarPage[] DocumentEdgeBarPages
+        {
+            get
+            {
+                return EdgeBarPages.Where(x => x.Document != null).ToArray();
+            }
+        }
+
+        public EdgeBarPage[] GlobalEdgeBarPages
+        {
+            get
+            {
+                return EdgeBarPages.Where(x => x.Document == null).ToArray();
+            }
+        }
+    }
+
+    public class EdgeBarPage : System.Windows.Forms.NativeWindow, IDisposable
     {
         [DllImport("user32.dll", SetLastError = true)]
         static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
@@ -335,45 +551,43 @@ namespace SolidEdgeSDK
         static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
         private bool _disposed = false;
+        private IntPtr _hWndChildWindow = IntPtr.Zero;
 
-        internal EdgeBarPage(int hWnd, IEdgeBarControl control)
-            : this(new IntPtr(hWnd), null, control)
+        public EdgeBarPage(IntPtr hWnd, int index = 0)
         {
-        }
+            if (hWnd == IntPtr.Zero) throw new System.ArgumentException($"{nameof(hWnd)} cannot be IntPtr.Zero.");
 
-        internal EdgeBarPage(int hWnd, SolidEdgeFramework.SolidEdgeDocument document, IEdgeBarControl control)
-            : this(new IntPtr(hWnd), document, control)
-        {
-        }
+            Index = index;
 
-        internal EdgeBarPage(IntPtr hWnd, SolidEdgeFramework.SolidEdgeDocument document, IEdgeBarControl control)
-        {
-            if (control is IWin32Window childlWindow)
-            {
-                AssignHandle(hWnd);
-
-                Control = control ?? throw new ArgumentNullException(nameof(control));
-                Control.Application = document?.Application;
-                Control.Document = document;
-
-                // Reparent child control to this hWnd.
-                SetParent(childlWindow.Handle, this.Handle);
-
-                // Show the child control and maximize it to fill the entire EdgeBarPage region.
-                ShowWindow(childlWindow.Handle, 3 /* SHOWMAXIMIZED */);
-            }
-            else
-            {
-                throw new System.Exception($"{control.GetType().FullName} does not implement interface {nameof(IWin32Window)}.");
-            }
+            // Take ownership of HWND returned from ISolidEdgeBar::AddPage.
+            AssignHandle(hWnd);
         }
 
         #region Properties
 
         public bool IsDisposed { get { return _disposed; } }
+        public object ChildObject { get; set; }
+        
+        public IntPtr ChildWindowHandle
+        {
+            get { return _hWndChildWindow; }
+            set
+            {
+                _hWndChildWindow = value;
 
-        public IEdgeBarControl Control { get; private set; }
+                if (_hWndChildWindow != IntPtr.Zero)
+                {
+                    // Reparent child control to this hWnd.
+                    SetParent(_hWndChildWindow, this.Handle);
 
+                    // Show the child control and maximize it to fill the entire EdgeBarPage region.
+                    ShowWindow(_hWndChildWindow, 3 /* SHOWMAXIMIZED */);
+                }
+            }
+        }
+
+        public int Index { get; private set; }
+        public SolidEdgeFramework.SolidEdgeDocument Document { get; set; }
         public virtual bool Visible { get; set; } = true;
 
         #endregion
@@ -399,7 +613,7 @@ namespace SolidEdgeSDK
                 {
                     try
                     {
-                        ((IDisposable)this.Control)?.Dispose();
+                        ((IDisposable)this.ChildObject)?.Dispose();
                     }
                     catch
                     {
@@ -414,7 +628,7 @@ namespace SolidEdgeSDK
                 {
                 }
 
-                Control = null;
+                ChildObject = null;
                 _disposed = true;
             }
         }
@@ -422,13 +636,84 @@ namespace SolidEdgeSDK
         #endregion
     }
 
-    public interface IEdgeBarControl
+    public sealed class EdgeBarPageConfiguration
     {
-        [Browsable(false)]
-        SolidEdgeFramework.Application Application { get; set; }
+        public int Index { get; set; }
+        public string NativeResourcesDllPath { get; set; }
+        public int NativeImageId { get; set; }
+        public string Tootip { get; set; }
+        public string Title { get; set; }
+        public string Caption { get; set; }
 
-        [Browsable(false)]
-        SolidEdgeFramework.SolidEdgeDocument Document { get; set; }
+        /// <summary>
+        /// Hint as to where the docking pane should dock.
+        /// </summary>
+        public EdgeBarPageDock Direction { get; set; } = EdgeBarPageDock.Left;
+
+        /// <summary>
+        /// EdgeBarConstant.DONOT_MAKE_ACTIVE
+        /// </summary>
+        public bool MakeActive { get; set; } = false;
+
+        /// <summary>
+        /// EdgeBarConstant.NO_RESIZE_CHILD
+        /// </summary>
+        public bool ResizeChild { get; set; } = true;
+
+        /// <summary>
+        /// EdgeBarConstant.UPDATE_ON_PANE_SLIDING
+        /// </summary>
+        public bool UpdateOnPaneSliding { get; set; } = false;
+
+        /// <summary>
+        /// EdgeBarConstant.WANTS_ACCELERATORS
+        /// </summary>
+        public bool WantsAccelerators { get; set; } = false;
+
+        public SolidEdgeConstants.EdgeBarConstant GetOptions(SolidEdgeFramework.SolidEdgeDocument document = null)
+        {
+            var options = default(SolidEdgeConstants.EdgeBarConstant);
+
+            if (document == null)
+            {
+                options |= SolidEdgeConstants.EdgeBarConstant.TRACK_CLOSE_GLOBALLY;
+            }
+            else
+            {
+                options |= SolidEdgeConstants.EdgeBarConstant.TRACK_CLOSE_BYDOCUMENT;
+            }
+
+            if (MakeActive == false)
+            {
+                options |= SolidEdgeConstants.EdgeBarConstant.DONOT_MAKE_ACTIVE;
+            }
+
+            if (ResizeChild == false)
+            {
+                options |= SolidEdgeConstants.EdgeBarConstant.NO_RESIZE_CHILD;
+            }
+
+            if (UpdateOnPaneSliding == true)
+            {
+                options |= SolidEdgeConstants.EdgeBarConstant.UPDATE_ON_PANE_SLIDING;
+            }
+
+            if (WantsAccelerators == true)
+            {
+                options |= SolidEdgeConstants.EdgeBarConstant.WANTS_ACCELERATORS;
+            }
+
+            return options;
+        }
+    }
+
+    public enum EdgeBarPageDock
+    {
+        Left = 0,
+        Rigth = 1,
+        Top = 2,
+        Button = 3,
+        None = 4
     }
 
     /// <summary>
@@ -745,9 +1030,7 @@ namespace SolidEdgeSDK
 
         internal RibbonController(SolidEdgeAddIn addIn)
         {
-            if (addIn == null) throw new ArgumentNullException(nameof(addIn));
-            SolidEdgeAddIn = addIn;
-
+            SolidEdgeAddIn = addIn ?? throw new ArgumentNullException(nameof(addIn));
             ComEventsManager = new ComEventsManager(this);
 
             if (SolidEdgeAddIn.SolidEdgeVersion.Major <= 105)
@@ -1526,9 +1809,9 @@ namespace SolidEdgeSDK.Extensions
         /// <summary>
         /// Returns a NativeWindow object that represents the main application window.
         /// </summary>
-        public static NativeWindow GetNativeWindow(this SolidEdgeFramework.Application application)
+        public static System.Windows.Forms.NativeWindow GetNativeWindow(this SolidEdgeFramework.Application application)
         {
-            return NativeWindow.FromHandle(new IntPtr(application.hWnd));
+            return System.Windows.Forms.NativeWindow.FromHandle(new IntPtr(application.hWnd));
         }
 
         /// <summary>
@@ -1576,7 +1859,7 @@ namespace SolidEdgeSDK.Extensions
         /// <summary>
         /// Shows the form as a modal dialog box with the application main window as the owner.
         /// </summary>
-        public static DialogResult ShowDialog(this SolidEdgeFramework.Application application, System.Windows.Forms.Form form)
+        public static System.Windows.Forms.DialogResult ShowDialog(this SolidEdgeFramework.Application application, System.Windows.Forms.Form form)
         {
             if (form == null) throw new ArgumentNullException("form");
 
@@ -1586,7 +1869,7 @@ namespace SolidEdgeSDK.Extensions
         /// <summary>
         /// Shows the form as a modal dialog box with the application main window as the owner.
         /// </summary>
-        public static DialogResult ShowDialog(this SolidEdgeFramework.Application application, CommonDialog dialog)
+        public static System.Windows.Forms.DialogResult ShowDialog(this SolidEdgeFramework.Application application, System.Windows.Forms.CommonDialog dialog)
         {
             if (dialog == null) throw new ArgumentNullException("dialog");
             return dialog.ShowDialog(application.GetNativeWindow());

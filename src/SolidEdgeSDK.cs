@@ -905,7 +905,7 @@ namespace SolidEdgeSDK.AddIn
 
         public bool IsDisposed { get { return _disposed; } }
         public object ChildObject { get; set; }
-        
+
         public IntPtr ChildWindowHandle
         {
             get { return _hWndChildWindow; }
@@ -1363,7 +1363,6 @@ namespace SolidEdgeSDK.AddIn
         SolidEdgeFramework.ISEAddInEventsEx
     {
         private List<Ribbon> _ribbons = new List<Ribbon>();
-        private Dictionary<IConnectionPoint, int> _connectionPointDictionary = new Dictionary<IConnectionPoint, int>();
         private bool _disposed = false;
 
         internal RibbonController(SolidEdgeAddIn addIn)
@@ -1427,7 +1426,6 @@ namespace SolidEdgeSDK.AddIn
                 if (control != null)
                 {
                     control.DoClick();
-                    ribbon.OnControlClick(control);
 
                     if (control is RibbonButton button)
                     {
@@ -1441,6 +1439,8 @@ namespace SolidEdgeSDK.AddIn
                     {
                         ribbon.OnRadioButtonClick(radioButton);
                     }
+
+                    ribbon.OnControlClick(control);
                 }
             }
         }
@@ -1489,6 +1489,8 @@ namespace SolidEdgeSDK.AddIn
 
                 if (control != null)
                 {
+                    ribbon.OnControlUpdateUI(control);
+
                     if (control.Enabled)
                     {
                         flags |= SolidEdgeConstants.SECommandActivation.seCmdActive_Enabled;
@@ -2005,6 +2007,10 @@ namespace SolidEdgeSDK.AddIn
         {
         }
 
+        public virtual void OnControlUpdateUI(RibbonControl control)
+        {
+        }
+
         public RibbonButton GetButton(int commandId)
         {
             return Buttons.FirstOrDefault(x => x.CommandId == commandId);
@@ -2048,6 +2054,54 @@ namespace SolidEdgeSDK.AddIn
 
         public RibbonControl this[int commandId] { get { return this.Controls.Where(x => x.CommandId == commandId).FirstOrDefault(); } }
         public RibbonTab[] Tabs { get; private set; } = new RibbonTab[] { };
+    }
+
+    public class ViewOverlayController : IDisposable
+    {
+        private bool _disposed = false;
+
+        internal ViewOverlayController(SolidEdgeAddIn addIn)
+        {
+            SolidEdgeAddIn = addIn ?? throw new ArgumentNullException(nameof(addIn));
+        }
+
+        /// <summary>
+        /// Destructor
+        /// </summary>
+        ~ViewOverlayController()
+        {
+            Dispose(false);
+        }
+
+        #region IDisposable implementation
+
+        /// <summary>
+        /// Disposes resources.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        void Dispose(bool disposing)
+        {
+            if (_disposed) return;
+
+            if (disposing)
+            {
+                // Free managed objects here.
+                EdgeBarPages.Clear();
+            }
+
+            // Free unmanaged objects here.
+            _disposed = true;
+        }
+
+        #endregion
+
+        public SolidEdgeAddIn SolidEdgeAddIn { get; private set; }
+        private List<EdgeBarPage> EdgeBarPages { get; set; } = new List<EdgeBarPage>();
     }
 }
 

@@ -22,10 +22,12 @@
 // type libraries directly from your project or pre generate the Interop
 // Assemblies.
 
+using SolidEdgeSDK.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace SolidEdgeSDK.AddIn
 {
@@ -105,175 +107,6 @@ namespace SolidEdgeSDK.AddIn
         public Guid[] ImplementedCategories { get; set; } = new Guid[] { };
         public Guid[] EnvironmentCategories { get; set; } = new Guid[] { };
         public AddInDescriptor[] Descriptors { get; set; } = new AddInDescriptor[] { };
-    }
-
-    public partial class EdgeBarController : IDisposable
-    {
-        private bool _disposed = false;
-
-        internal EdgeBarController(SolidEdgeAddIn addIn)
-        {
-            SolidEdgeAddIn = addIn ?? throw new ArgumentNullException(nameof(addIn));
-        }
-
-        /// <summary>
-        /// Destructor
-        /// </summary>
-        ~EdgeBarController()
-        {
-            Dispose(false);
-        }
-
-        public EdgeBarPage AddWinFormPage<TControl>(EdgeBarPageConfiguration config) where TControl : System.Windows.Forms.Control, new()
-        {
-            return AddWinFormPage<TControl>(
-                config: config,
-                document: null);
-        }
-
-        public EdgeBarPage AddWinFormPage<TControl>(EdgeBarPageConfiguration config, SolidEdgeFramework.SolidEdgeDocument document) where TControl : System.Windows.Forms.Control, new()
-        {
-            TControl control = Activator.CreateInstance<TControl>();
-
-            var edgeBarPage = AddPage(
-                config: config,
-                controlHandle: control.Handle,
-                document: document);
-
-            edgeBarPage.ChildObject = control;
-
-            return edgeBarPage;
-        }
-
-        public EdgeBarPage AddPage(EdgeBarPageConfiguration config, IntPtr controlHandle, SolidEdgeFramework.SolidEdgeDocument document)
-        {
-            if (config == null) throw new ArgumentNullException(nameof(config));
-
-            var options = (int)config.GetOptions(document);
-            var direction = (int)config.Direction;
-
-            var hWndEdgeBarPage = SolidEdgeAddIn.EdgeBarEx2.AddPageEx2(
-                theDocument: document,
-                ResourceFilename: config.NativeResourcesDllPath,
-                Index: config.Index,
-                nBitmapID: config.NativeImageId,
-                Tooltip: config.Tootip,
-                Title: config.Title,
-                Caption: config.Caption,
-                nOptions: options,
-                Direction: direction);
-
-            var edgeBarPage = new EdgeBarPage(new IntPtr(hWndEdgeBarPage), config.Index)
-            {
-                ChildWindowHandle = controlHandle,
-                Document = document
-            };
-
-            EdgeBarPages.Add(edgeBarPage);
-
-            return edgeBarPage;
-        }
-
-        public void RemoveAllPages()
-        {
-            var edgeBarPages = EdgeBarPages.ToArray();
-
-            foreach (var edgeBarPage in edgeBarPages)
-            {
-                RemovePage(edgeBarPage);
-            }
-        }
-
-        public void RemoveDocumentPages(SolidEdgeFramework.SolidEdgeDocument document)
-        {
-            if (document == null) throw new ArgumentNullException(nameof(document));
-
-            var edgeBarPages = DocumentEdgeBarPages.Where(x => x.Document == document);
-
-            foreach (var edgeBarPage in edgeBarPages)
-            {
-                RemovePage(edgeBarPage);
-            }
-        }
-
-        public void RemoveGlobalPages()
-        {
-            var edgeBarPages = GlobalEdgeBarPages.ToArray();
-
-            foreach (var edgeBarPage in edgeBarPages)
-            {
-                RemovePage(edgeBarPage);
-            }
-        }
-
-        private void RemovePage(EdgeBarPage edgeBarPage)
-        {
-            int hWnd = edgeBarPage.Handle.ToInt32();
-
-            try
-            {
-                SolidEdgeAddIn.EdgeBarEx2.RemovePage(edgeBarPage.Document, hWnd, 0);
-            }
-            catch
-            {
-            }
-
-            try
-            {
-                edgeBarPage.Dispose();
-            }
-            catch
-            {
-            }
-
-            EdgeBarPages.Remove(edgeBarPage);
-        }
-
-        #region IDisposable implementation
-
-        /// <summary>
-        /// Disposes resources.
-        /// </summary>
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        void Dispose(bool disposing)
-        {
-            if (_disposed) return;
-
-            if (disposing)
-            {
-                // Free managed objects here.
-                EdgeBarPages.Clear();
-            }
-
-            // Free unmanaged objects here.
-            _disposed = true;
-        }
-
-        #endregion
-
-        public SolidEdgeAddIn SolidEdgeAddIn { get; private set; }
-        private List<EdgeBarPage> EdgeBarPages { get; set; } = new List<EdgeBarPage>();
-
-        public EdgeBarPage[] DocumentEdgeBarPages
-        {
-            get
-            {
-                return EdgeBarPages.Where(x => x.Document != null).ToArray();
-            }
-        }
-
-        public EdgeBarPage[] GlobalEdgeBarPages
-        {
-            get
-            {
-                return EdgeBarPages.Where(x => x.Document == null).ToArray();
-            }
-        }
     }
 
     public class EdgeBarPage : System.Windows.Forms.NativeWindow, IDisposable
@@ -462,6 +295,7 @@ namespace SolidEdgeSDK.AddIn
         private static SolidEdgeAddIn _instance;
         private AppDomain _isolatedDomain;
         private SolidEdgeFramework.ISolidEdgeAddIn _isolatedAddIn;
+        private Dictionary<Guid, Ribbon> _ribbons = new Dictionary<Guid, Ribbon>();
 
         public SolidEdgeAddIn()
         {
@@ -469,6 +303,8 @@ namespace SolidEdgeSDK.AddIn
             AppDomain.CurrentDomain.AssemblyResolve += (sender, args)
                 => AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(x => x.FullName == args.Name);
         }
+
+        #region SolidEdgeFramework.ISolidEdgeAddIn
 
         void SolidEdgeFramework.ISolidEdgeAddIn.OnConnection(object Application, SolidEdgeFramework.SeConnectMode ConnectMode, SolidEdgeFramework.AddIn AddInInstance)
         {
@@ -557,6 +393,296 @@ namespace SolidEdgeSDK.AddIn
                 OnDisconnection(DisconnectMode);
             }
         }
+
+        #endregion
+
+        #region EdgeBar
+
+        public EdgeBarPage AddWinFormEdgeBarPage<TControl>(EdgeBarPageConfiguration config) where TControl : System.Windows.Forms.Control, new()
+        {
+            return AddWinFormEdgeBarPage<TControl>(
+                config: config,
+                document: null);
+        }
+
+        public EdgeBarPage AddWinFormEdgeBarPage<TControl>(EdgeBarPageConfiguration config, SolidEdgeFramework.SolidEdgeDocument document) where TControl : System.Windows.Forms.Control, new()
+        {
+            TControl control = Activator.CreateInstance<TControl>();
+
+            var edgeBarPage = AddEdgeBarPage(
+                config: config,
+                controlHandle: control.Handle,
+                document: document);
+
+            edgeBarPage.ChildObject = control;
+
+            return edgeBarPage;
+        }
+
+        public EdgeBarPage AddEdgeBarPage(EdgeBarPageConfiguration config, IntPtr controlHandle, SolidEdgeFramework.SolidEdgeDocument document)
+        {
+            if (config == null) throw new ArgumentNullException(nameof(config));
+
+            var options = (int)config.GetOptions(document);
+            var direction = (int)config.Direction;
+
+            var hWndEdgeBarPage = ((SolidEdgeFramework.ISolidEdgeBarEx2)AddInInstance).AddPageEx2(
+                theDocument: document,
+                ResourceFilename: config.NativeResourcesDllPath,
+                Index: config.Index,
+                nBitmapID: config.NativeImageId,
+                Tooltip: config.Tootip,
+                Title: config.Title,
+                Caption: config.Caption,
+                nOptions: options,
+                Direction: direction);
+
+            var edgeBarPage = new EdgeBarPage(new IntPtr(hWndEdgeBarPage), config.Index)
+            {
+                ChildWindowHandle = controlHandle,
+                Document = document
+            };
+
+            EdgeBarPages.Add(edgeBarPage);
+
+            return edgeBarPage;
+        }
+
+        public void RemoveAllEdgeBarPages()
+        {
+            var edgeBarPages = EdgeBarPages.ToArray();
+
+            foreach (var edgeBarPage in edgeBarPages)
+            {
+                RemoveEdgeBarPage(edgeBarPage);
+            }
+        }
+
+        public void RemoveEdgeBarPages(SolidEdgeFramework.SolidEdgeDocument document)
+        {
+            var edgeBarPages = EdgeBarPages
+                .Where(x => x.Document == document)
+                .ToArray();
+
+            foreach (var edgeBarPage in edgeBarPages)
+            {
+                RemoveEdgeBarPage(edgeBarPage);
+            }
+        }
+
+        private void RemoveEdgeBarPage(EdgeBarPage edgeBarPage)
+        {
+            int hWnd = edgeBarPage.Handle.ToInt32();
+
+            try
+            {
+                ((SolidEdgeFramework.ISolidEdgeBarEx2)AddInInstance).RemovePage(edgeBarPage.Document, hWnd, 0);
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                edgeBarPage.Dispose();
+            }
+            catch
+            {
+            }
+
+            EdgeBarPages.Remove(edgeBarPage);
+        }
+
+        internal List<EdgeBarPage> EdgeBarPages { get; set; } = new List<EdgeBarPage>();
+
+        public EdgeBarPage[] DocumentEdgeBarPages
+        {
+            get
+            {
+                return EdgeBarPages.Where(x => x.Document != null).ToArray();
+            }
+        }
+
+        public EdgeBarPage[] GlobalEdgeBarPages
+        {
+            get
+            {
+                return EdgeBarPages.Where(x => x.Document == null).ToArray();
+            }
+        }
+
+        #endregion
+
+        #region Ribbon
+
+        public TRibbon AddRibbon<TRibbon>(Guid environmentCategory, bool firstTime) where TRibbon : Ribbon
+        {
+            TRibbon ribbon = Activator.CreateInstance<TRibbon>();
+
+            ribbon.EnvironmentCategory = environmentCategory;
+            ribbon.SolidEdgeAddIn = this;
+            ribbon.Initialize();
+
+            Add(ribbon, environmentCategory, firstTime);
+
+            return ribbon;
+        }
+
+        public void Add(Ribbon ribbon, Guid environmentCategory, bool firstTime)
+        {
+            if (ribbon == null) throw new ArgumentNullException("ribbon");
+
+            // Solid Edge ST or higher.
+            var addInEx = (SolidEdgeFramework.ISEAddInEx)AddInInstance;
+
+            // Solid Edge ST7 or higher.
+            var addInEx2 = (SolidEdgeFramework.ISEAddInEx2)null;
+            //var addInEx2 = _addIn.AddInEx2;
+
+            var EnvironmentCatID = environmentCategory.ToString("B");
+
+            if (_ribbons.ContainsKey(ribbon.EnvironmentCategory))
+            {
+                throw new System.Exception(String.Format("A ribbon has already been added for environment category {0}.", ribbon.EnvironmentCategory));
+            }
+
+            if (ribbon.EnvironmentCategory.Equals(Guid.Empty))
+            {
+                throw new System.Exception(String.Format("{0} is not a valid environment category.", ribbon.EnvironmentCategory));
+            }
+
+            foreach (var tab in ribbon.Tabs)
+            {
+                foreach (var group in tab.Groups)
+                {
+                    foreach (var control in group.Controls)
+                    {
+                        // Properly format the command bar name string.
+                        var categoryName = tab.Name;
+
+                        // Properly format the command name string.
+                        var commandName = new System.Text.StringBuilder();
+
+                        // Note: The command will not be added if it the name is not unique!
+                        commandName.AppendFormat("{0}_{1}", this.Guid.ToString(), control.CommandId);
+
+                        if (control is RibbonButton)
+                        {
+                            var ribbonButton = control as RibbonButton;
+                            if (String.IsNullOrEmpty(ribbonButton.DropDownGroup) == false)
+                            {
+                                // Now append the description, tooltip, etc separated by \n.
+                                commandName.AppendFormat("\n{0}\\\\{1}\n{2}\n{3}", ribbonButton.DropDownGroup, control.Label, control.SuperTip, control.ScreenTip);
+                            }
+                            else
+                            {
+                                // Now append the description, tooltip, etc separated by \n.
+                                commandName.AppendFormat("\n{0}\n{1}\n{2}", control.Label, control.SuperTip, control.ScreenTip);
+                            }
+                        }
+                        else
+                        {
+                            // Now append the description, tooltip, etc separated by \n.
+                            commandName.AppendFormat("\n{0}\n{1}\n{2}", control.Label, control.SuperTip, control.ScreenTip);
+                        }
+
+                        // Append macro info if provided.
+                        if (!String.IsNullOrEmpty(control.Macro))
+                        {
+                            commandName.AppendFormat("\n{0}", control.Macro);
+
+                            if (!String.IsNullOrEmpty(control.MacroParameters))
+                            {
+                                commandName.AppendFormat("\n{0}", control.MacroParameters);
+                            }
+                        }
+
+                        // Assign the control's CommandName property. Mostly just for reference.
+                        control.CommandName = commandName.ToString();
+
+                        // Allocate command arrays. Please see the addin.doc in the SDK folder for details.
+                        Array commandNames = new string[] { control.CommandName };
+                        Array commandIDs = new int[] { control.CommandId };
+
+                        if (addInEx2 != null)
+                        {
+                            // Currently having an issue with SetAddInInfoEx2() in that the commandButtonStyles don't seem to apply.
+                            // Need to investigate further. For now, addInEx2 is set to null.
+
+                            categoryName = String.Format("{0}\n{1}", tab.Name, group.Name);
+                            Array commandButtonStyles = new SolidEdgeFramework.SeButtonStyle[] { control.Style };
+
+                            // ST7 or higher.
+                            addInEx2.SetAddInInfoEx2(
+                                NativeResourcesDllPath,
+                                EnvironmentCatID,
+                                categoryName,
+                                control.ImageId,
+                                -1,
+                                -1,
+                                -1,
+                                commandNames.Length,
+                                ref commandNames,
+                                ref commandIDs,
+                                ref commandButtonStyles);
+                        }
+                        else if (addInEx != null)
+                        {
+                            // ST or higher
+                            addInEx.SetAddInInfoEx(
+                                NativeResourcesDllPath,
+                                EnvironmentCatID,
+                                categoryName,
+                                control.ImageId,
+                                -1,
+                                -1,
+                                -1,
+                                commandNames.Length,
+                                ref commandNames,
+                                ref commandIDs);
+
+                            if (firstTime)
+                            {
+                                var commandBarName = String.Format("{0}\n{1}", tab.Name, group.Name);
+
+                                // Add the command bar button.
+                                SolidEdgeFramework.CommandBarButton pButton = addInEx.AddCommandBarButton(EnvironmentCatID, commandBarName, control.CommandId);
+
+                                // Set the button style.
+                                if (pButton != null)
+                                {
+                                    pButton.Style = control.Style;
+                                }
+                            }
+                        }
+
+                        control.SolidEdgeCommandId = (int)commandIDs.GetValue(0);
+                    }
+                }
+            }
+
+            _ribbons.Add(ribbon.EnvironmentCategory, ribbon);
+        }
+
+        public Ribbon ActiveRibbon
+        {
+            get
+            {
+                var environment = this.Application.GetActiveEnvironment();
+                var envCatId = Guid.Parse(environment.CATID);
+
+                if (_ribbons.TryGetValue(envCatId, out Ribbon value))
+                {
+                    return value;
+                }
+
+                return null;
+            }
+        }
+
+        public IEnumerable<Ribbon> Ribbons { get { return _ribbons.Values; } }
+
+        #endregion
 
         public abstract void OnConnection(SolidEdgeFramework.SeConnectMode ConnectMode);
         public abstract void OnConnectToEnvironment(Guid EnvCatID, SolidEdgeFramework.Environment environment, bool firstTime);
@@ -690,12 +816,6 @@ namespace SolidEdgeSDK.AddIn
             get { return this.GetType().Assembly.Location; }
         }
 
-        /// <summary>
-        /// Returns an instance of SolidEdgeFramework.ISolidEdgeBarEx2.
-        /// </summary>
-        /// <remarks>Available in Solid Edge ST6 or greater.</remarks>
-        public SolidEdgeFramework.ISolidEdgeBarEx2 EdgeBarEx2 { get { return AddInInstance as SolidEdgeFramework.ISolidEdgeBarEx2; } }
-
         public Version SolidEdgeVersion { get { return new Version(Application.Version); ; } }
     }
 
@@ -752,389 +872,6 @@ namespace SolidEdgeSDK.AddIn
         public override string ToString() { return Name; }
     }
 
-    /// <summary>
-    /// Controller class for working with ribbons.
-    /// </summary>
-    public sealed class RibbonController : IDisposable,
-        SolidEdgeFramework.ISEAddInEvents,
-        SolidEdgeFramework.ISEAddInEventsEx
-    {
-        private List<Ribbon> _ribbons = new List<Ribbon>();
-        private bool _disposed = false;
-
-        internal RibbonController(SolidEdgeAddIn addIn)
-        {
-            SolidEdgeAddIn = addIn ?? throw new ArgumentNullException(nameof(addIn));
-            ComEventsManager = new SolidEdgeSDK.InteropServices.ComEventsManager(this);
-
-            if (SolidEdgeAddIn.SolidEdgeVersion.Major <= 105)
-            {
-                // Solid Edge ST5 or lower.
-                ComEventsManager.Attach<SolidEdgeFramework.ISEAddInEvents>(SolidEdgeAddIn.AddInInstance);
-            }
-            else
-            {
-                // Solid Edge ST6 or higher.
-                ComEventsManager.Attach<SolidEdgeFramework.ISEAddInEventsEx>(SolidEdgeAddIn.AddInInstance);
-            }
-        }
-
-        /// <summary>
-        /// Destructor
-        /// </summary>
-        ~RibbonController()
-        {
-            Dispose(false);
-        }
-
-        #region SolidEdgeFramework.ISEAddInEvents implentation
-
-        void SolidEdgeFramework.ISEAddInEvents.OnCommand(int CommandID)
-        {
-            // Forward call to ISEAddInEventsEx implementation.
-            ((SolidEdgeFramework.ISEAddInEventsEx)this).OnCommand(CommandID);
-        }
-
-        void SolidEdgeFramework.ISEAddInEvents.OnCommandHelp(int hFrameWnd, int HelpCommandID, int CommandID)
-        {
-            // Forward call to ISEAddInEventsEx implementation.
-            ((SolidEdgeFramework.ISEAddInEventsEx)this).OnCommandHelp(hFrameWnd, HelpCommandID, CommandID);
-        }
-
-        void SolidEdgeFramework.ISEAddInEvents.OnCommandUpdateUI(int CommandID, ref int CommandFlags, out string MenuItemText, ref int BitmapID)
-        {
-            // Forward call to ISEAddInEventsEx implementation.
-            MenuItemText = null;
-            ((SolidEdgeFramework.ISEAddInEventsEx)this).OnCommandUpdateUI(CommandID, ref CommandFlags, out MenuItemText, ref BitmapID);
-        }
-
-        #endregion
-
-        #region SolidEdgeFramework.ISEAddInEventsEx implementation
-
-        void SolidEdgeFramework.ISEAddInEventsEx.OnCommand(int CommandID)
-        {
-            var ribbon = ActiveRibbon;
-
-            if (ribbon != null)
-            {
-                var control = ribbon.Controls.Where(x => x.CommandId == CommandID).FirstOrDefault();
-
-                if (control != null)
-                {
-                    control.DoClick();
-
-                    if (control is RibbonButton button)
-                    {
-                        ribbon.OnButtonClick(button);
-                    }
-                    else if (control is RibbonCheckBox checkBox)
-                    {
-                        ribbon.OnCheckBoxClick(checkBox);
-                    }
-                    else if (control is RibbonRadioButton radioButton)
-                    {
-                        ribbon.OnRadioButtonClick(radioButton);
-                    }
-
-                    ribbon.OnControlClick(control);
-                }
-            }
-        }
-
-        void SolidEdgeFramework.ISEAddInEventsEx.OnCommandHelp(int hFrameWnd, int HelpCommandID, int CommandID)
-        {
-            var ribbon = ActiveRibbon;
-
-            if (ribbon != null)
-            {
-                var control = ribbon.Controls.Where(x => x.CommandId == CommandID).FirstOrDefault();
-
-                if (control != null)
-                {
-                    control.DoHelp(new IntPtr(hFrameWnd), HelpCommandID);
-                }
-            }
-        }
-
-        void SolidEdgeFramework.ISEAddInEventsEx.OnCommandOnLineHelp(int HelpCommandID, int CommandID, out string HelpURL)
-        {
-            var ribbon = ActiveRibbon;
-
-            if (ribbon != null)
-            {
-                var control = ribbon.Controls.FirstOrDefault(x => x.CommandId == CommandID);
-
-                if (control != null)
-                {
-                    HelpURL = control.WebHelpURL;
-                    return;
-                }
-            }
-            HelpURL = null;
-        }
-
-        void SolidEdgeFramework.ISEAddInEventsEx.OnCommandUpdateUI(int CommandID, ref int CommandFlags, out string MenuItemText, ref int BitmapID)
-        {
-            MenuItemText = null;
-            var ribbon = ActiveRibbon;
-            var flags = default(SolidEdgeConstants.SECommandActivation); ;
-
-            if (ribbon != null)
-            {
-                var control = ribbon.Controls.Where(x => x.CommandId == CommandID).FirstOrDefault();
-
-                if (control != null)
-                {
-                    ribbon.OnControlUpdateUI(control);
-
-                    if (control.Enabled)
-                    {
-                        flags |= SolidEdgeConstants.SECommandActivation.seCmdActive_Enabled;
-                    }
-
-                    if (control.Checked)
-                    {
-                        flags |= SolidEdgeConstants.SECommandActivation.seCmdActive_Checked;
-                    }
-
-                    if (control.UseDotMark)
-                    {
-                        flags |= SolidEdgeConstants.SECommandActivation.seCmdActive_UseDotMark;
-                    }
-
-                    flags |= SolidEdgeConstants.SECommandActivation.seCmdActive_ChangeText;
-                    MenuItemText = control.Label;
-
-                    CommandFlags = (int)flags;
-                }
-            }
-        }
-
-        #endregion
-
-        #region Methods
-
-        /// <summary>
-        /// Adds a ribbon to the specified environment.
-        /// </summary>
-        /// <typeparam name="TRibbon"></typeparam>
-        /// <param name="environmentCategory"></param>
-        /// <param name="firstTime"></param>
-        public TRibbon Add<TRibbon>(Guid environmentCategory, bool firstTime) where TRibbon : Ribbon
-        {
-            TRibbon ribbon = Activator.CreateInstance<TRibbon>();
-
-            ribbon.EnvironmentCategory = environmentCategory;
-            ribbon.SolidEdgeAddIn = this.SolidEdgeAddIn;
-            ribbon.Initialize();
-
-            Add(ribbon, environmentCategory, firstTime);
-
-            return ribbon;
-        }
-
-        /// <summary>
-        /// Adds a ribbon to the specified environment.
-        /// </summary>
-        /// <param name="ribbon"></param>
-        /// <param name="environmentCategory"></param>
-        /// <param name="firstTime"></param>
-        public void Add(Ribbon ribbon, Guid environmentCategory, bool firstTime)
-        {
-            if (ribbon == null) throw new ArgumentNullException("ribbon");
-
-            // Solid Edge ST or higher.
-            var addInEx = (SolidEdgeFramework.ISEAddInEx)SolidEdgeAddIn.AddInInstance;
-
-            // Solid Edge ST7 or higher.
-            var addInEx2 = (SolidEdgeFramework.ISEAddInEx2)null;
-            //var addInEx2 = _addIn.AddInEx2;
-
-            var EnvironmentCatID = environmentCategory.ToString("B");
-
-            if (_ribbons.Exists(x => x.EnvironmentCategory.Equals(ribbon.EnvironmentCategory)))
-            {
-                throw new System.Exception(String.Format("A ribbon has already been added for environment category {0}.", ribbon.EnvironmentCategory));
-            }
-
-            if (ribbon.EnvironmentCategory.Equals(Guid.Empty))
-            {
-                throw new System.Exception(String.Format("{0} is not a valid environment category.", ribbon.EnvironmentCategory));
-            }
-
-            foreach (var tab in ribbon.Tabs)
-            {
-                foreach (var group in tab.Groups)
-                {
-                    foreach (var control in group.Controls)
-                    {
-                        // Properly format the command bar name string.
-                        var categoryName = tab.Name;
-
-                        // Properly format the command name string.
-                        var commandName = new System.Text.StringBuilder();
-
-                        // Note: The command will not be added if it the name is not unique!
-                        commandName.AppendFormat("{0}_{1}", SolidEdgeAddIn.Guid.ToString(), control.CommandId);
-
-                        if (control is RibbonButton)
-                        {
-                            var ribbonButton = control as RibbonButton;
-                            if (String.IsNullOrEmpty(ribbonButton.DropDownGroup) == false)
-                            {
-                                // Now append the description, tooltip, etc separated by \n.
-                                commandName.AppendFormat("\n{0}\\\\{1}\n{2}\n{3}", ribbonButton.DropDownGroup, control.Label, control.SuperTip, control.ScreenTip);
-                            }
-                            else
-                            {
-                                // Now append the description, tooltip, etc separated by \n.
-                                commandName.AppendFormat("\n{0}\n{1}\n{2}", control.Label, control.SuperTip, control.ScreenTip);
-                            }
-                        }
-                        else
-                        {
-                            // Now append the description, tooltip, etc separated by \n.
-                            commandName.AppendFormat("\n{0}\n{1}\n{2}", control.Label, control.SuperTip, control.ScreenTip);
-                        }
-
-                        // Append macro info if provided.
-                        if (!String.IsNullOrEmpty(control.Macro))
-                        {
-                            commandName.AppendFormat("\n{0}", control.Macro);
-
-                            if (!String.IsNullOrEmpty(control.MacroParameters))
-                            {
-                                commandName.AppendFormat("\n{0}", control.MacroParameters);
-                            }
-                        }
-
-                        // Assign the control's CommandName property. Mostly just for reference.
-                        control.CommandName = commandName.ToString();
-
-                        // Allocate command arrays. Please see the addin.doc in the SDK folder for details.
-                        Array commandNames = new string[] { control.CommandName };
-                        Array commandIDs = new int[] { control.CommandId };
-
-                        if (addInEx2 != null)
-                        {
-                            // Currently having an issue with SetAddInInfoEx2() in that the commandButtonStyles don't seem to apply.
-                            // Need to investigate further. For now, addInEx2 is set to null.
-
-                            categoryName = String.Format("{0}\n{1}", tab.Name, group.Name);
-                            Array commandButtonStyles = new SolidEdgeFramework.SeButtonStyle[] { control.Style };
-
-                            // ST7 or higher.
-                            addInEx2.SetAddInInfoEx2(
-                                SolidEdgeAddIn.NativeResourcesDllPath,
-                                EnvironmentCatID,
-                                categoryName,
-                                control.ImageId,
-                                -1,
-                                -1,
-                                -1,
-                                commandNames.Length,
-                                ref commandNames,
-                                ref commandIDs,
-                                ref commandButtonStyles);
-                        }
-                        else if (addInEx != null)
-                        {
-                            // ST or higher
-                            addInEx.SetAddInInfoEx(
-                                SolidEdgeAddIn.NativeResourcesDllPath,
-                                EnvironmentCatID,
-                                categoryName,
-                                control.ImageId,
-                                -1,
-                                -1,
-                                -1,
-                                commandNames.Length,
-                                ref commandNames,
-                                ref commandIDs);
-
-                            if (firstTime)
-                            {
-                                var commandBarName = String.Format("{0}\n{1}", tab.Name, group.Name);
-
-                                // Add the command bar button.
-                                SolidEdgeFramework.CommandBarButton pButton = addInEx.AddCommandBarButton(EnvironmentCatID, commandBarName, control.CommandId);
-
-                                // Set the button style.
-                                if (pButton != null)
-                                {
-                                    pButton.Style = control.Style;
-                                }
-                            }
-                        }
-
-                        control.SolidEdgeCommandId = (int)commandIDs.GetValue(0);
-                    }
-                }
-            }
-
-            _ribbons.Add(ribbon);
-        }
-
-        #endregion
-
-        #region Properties
-
-        /// <summary>
-        /// Returns the ribbon for the current environment.
-        /// </summary>
-        public Ribbon ActiveRibbon
-        {
-            get
-            {
-                var application = SolidEdgeAddIn.Application;
-                var environment = SolidEdgeSDK.Extensions.ApplicationExtensions.GetActiveEnvironment(application);
-                var envCatId = Guid.Parse(environment.CATID);
-                return _ribbons.Where(x => x.EnvironmentCategory.Equals(envCatId)).FirstOrDefault();
-            }
-        }
-
-        /// <summary>
-        /// Returns an enumerable collection of ribbons.
-        /// </summary>
-        public IEnumerable<Ribbon> Ribbons { get { return _ribbons.AsEnumerable(); } }
-
-        public SolidEdgeAddIn SolidEdgeAddIn { get; private set; }
-        public SolidEdgeSDK.InteropServices.ComEventsManager ComEventsManager { get; set; }
-
-        #endregion
-
-        #region IDisposable implementation
-
-        /// <summary>
-        /// Disposes resources.
-        /// </summary>
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        void Dispose(bool disposing)
-        {
-            if (_disposed) return;
-
-            if (disposing)
-            {
-                // Free managed objects here.
-
-                _ribbons.Clear();
-            }
-
-            // Free unmanaged objects here. 
-            ComEventsManager.DetachAll();
-
-            _disposed = true;
-        }
-
-        #endregion
-    }
-
     [Serializable]
     public delegate void RibbonControlClickEventHandler(RibbonControl control);
 
@@ -1146,16 +883,6 @@ namespace SolidEdgeSDK.AddIn
     /// </summary>
     public abstract class RibbonControl
     {
-        /// <summary>
-        /// Raised when a user clicks the control.
-        /// </summary>
-        public event RibbonControlClickEventHandler Click;
-
-        /// <summary>
-        /// Raised when user requests help for the control.
-        /// </summary>
-        public event RibbonControlHelpEventHandler Help;
-
         internal RibbonControl(int commandId)
         {
             CommandId = commandId;
@@ -1255,16 +982,6 @@ namespace SolidEdgeSDK.AddIn
         /// Gets or set the telp URL that is shown in the browser if the user asks for help by using the F1 key.
         /// </summary>
         public string WebHelpURL { get; set; }
-
-        internal virtual void DoClick()
-        {
-            Click?.Invoke(this);
-        }
-
-        internal void DoHelp(IntPtr hWndFrame, int helpCommandID)
-        {
-            Help?.Invoke(this, hWndFrame, helpCommandID);
-        }
     }
 
     public class RibbonButton : RibbonControl
@@ -1385,27 +1102,16 @@ namespace SolidEdgeSDK.AddIn
                 throw new System.Exception($"{this.GetType().FullName} has already been initialized.");
             }
 
+            var duplicateCommandIds = tabs.SelectMany(x => x.Controls).Select(x => x.CommandId)
+                .GroupBy(x => x)
+                .Where(x => x.Count() > 1);
+
+            if (duplicateCommandIds.Any())
+            {
+                throw new System.Exception($"Duplicate command IDs detected. The duplicated command IDs are: '{String.Join(",", duplicateCommandIds.Select(x => x.Key))}'.");
+            }
+
             Tabs = tabs;
-        }
-
-        public virtual void OnControlClick(RibbonControl control)
-        {
-        }
-
-        public virtual void OnButtonClick(RibbonButton button)
-        {
-        }
-
-        public virtual void OnCheckBoxClick(RibbonCheckBox checkBox)
-        {
-        }
-
-        public virtual void OnRadioButtonClick(RibbonRadioButton radiobutton)
-        {
-        }
-
-        public virtual void OnControlUpdateUI(RibbonControl control)
-        {
         }
 
         public RibbonButton GetButton(int commandId)
@@ -1416,6 +1122,11 @@ namespace SolidEdgeSDK.AddIn
         public RibbonCheckBox GetCheckBox(int commandId)
         {
             return CheckBoxes.FirstOrDefault(x => x.CommandId == commandId);
+        }
+
+        public RibbonControl GetControl(int commandId)
+        {
+            return Controls.FirstOrDefault(x => x.CommandId == commandId);
         }
 
         public TRibbonControl GetControl<TRibbonControl>(int commandId) where TRibbonControl : RibbonControl
@@ -1451,54 +1162,6 @@ namespace SolidEdgeSDK.AddIn
 
         public RibbonControl this[int commandId] { get { return this.Controls.Where(x => x.CommandId == commandId).FirstOrDefault(); } }
         public RibbonTab[] Tabs { get; private set; } = new RibbonTab[] { };
-    }
-
-    public class ViewOverlayController : IDisposable
-    {
-        private bool _disposed = false;
-
-        internal ViewOverlayController(SolidEdgeAddIn addIn)
-        {
-            SolidEdgeAddIn = addIn ?? throw new ArgumentNullException(nameof(addIn));
-        }
-
-        /// <summary>
-        /// Destructor
-        /// </summary>
-        ~ViewOverlayController()
-        {
-            Dispose(false);
-        }
-
-        #region IDisposable implementation
-
-        /// <summary>
-        /// Disposes resources.
-        /// </summary>
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        void Dispose(bool disposing)
-        {
-            if (_disposed) return;
-
-            if (disposing)
-            {
-                // Free managed objects here.
-                EdgeBarPages.Clear();
-            }
-
-            // Free unmanaged objects here.
-            _disposed = true;
-        }
-
-        #endregion
-
-        public SolidEdgeAddIn SolidEdgeAddIn { get; private set; }
-        private List<EdgeBarPage> EdgeBarPages { get; set; } = new List<EdgeBarPage>();
     }
 }
 
@@ -1630,7 +1293,143 @@ namespace SolidEdgeSDK.Extensions
         /// <summary>
         /// Activates a specified Solid Edge command.
         /// </summary>
-        public static void StartCommand(this SolidEdgeFramework.Application application, SolidEdgeFramework.SolidEdgeCommandConstants CommandID)
+        public static void StartCommand(this SolidEdgeFramework.Application application, SolidEdgeConstants.AssemblyCommandConstants CommandID)
+        {
+            application.StartCommand((SolidEdgeFramework.SolidEdgeCommandConstants)CommandID);
+        }
+
+        /// <summary>
+        /// Activates a specified Solid Edge command.
+        /// </summary>
+        public static void StartCommand(this SolidEdgeFramework.Application application, SolidEdgeConstants.CuttingPlaneLineCommandConstants CommandID)
+        {
+            application.StartCommand((SolidEdgeFramework.SolidEdgeCommandConstants)CommandID);
+        }
+
+        /// <summary>
+        /// Activates a specified Solid Edge command.
+        /// </summary>
+        public static void StartCommand(this SolidEdgeFramework.Application application, SolidEdgeConstants.DetailCommandConstants CommandID)
+        {
+            application.StartCommand((SolidEdgeFramework.SolidEdgeCommandConstants)CommandID);
+        }
+
+        /// <summary>
+        /// Activates a specified Solid Edge command.
+        /// </summary>
+        public static void StartCommand(this SolidEdgeFramework.Application application, SolidEdgeConstants.DrawingViewEditCommandConstants CommandID)
+        {
+            application.StartCommand((SolidEdgeFramework.SolidEdgeCommandConstants)CommandID);
+        }
+
+        /// <summary>
+        /// Activates a specified Solid Edge command.
+        /// </summary>
+        public static void StartCommand(this SolidEdgeFramework.Application application, SolidEdgeConstants.ExplodeCommandConstants CommandID)
+        {
+            application.StartCommand((SolidEdgeFramework.SolidEdgeCommandConstants)CommandID);
+        }
+
+        /// <summary>
+        /// Activates a specified Solid Edge command.
+        /// </summary>
+        public static void StartCommand(this SolidEdgeFramework.Application application, SolidEdgeConstants.LayoutCommandConstants CommandID)
+        {
+            application.StartCommand((SolidEdgeFramework.SolidEdgeCommandConstants)CommandID);
+        }
+
+        /// <summary>
+        /// Activates a specified Solid Edge command.
+        /// </summary>
+        public static void StartCommand(this SolidEdgeFramework.Application application, SolidEdgeConstants.LayoutInPartCommandConstants CommandID)
+        {
+            application.StartCommand((SolidEdgeFramework.SolidEdgeCommandConstants)CommandID);
+        }
+
+        /// <summary>
+        /// Activates a specified Solid Edge command.
+        /// </summary>
+        public static void StartCommand(this SolidEdgeFramework.Application application, SolidEdgeConstants.MotionCommandConstants CommandID)
+        {
+            application.StartCommand((SolidEdgeFramework.SolidEdgeCommandConstants)CommandID);
+        }
+
+        /// <summary>
+        /// Activates a specified Solid Edge command.
+        /// </summary>
+        public static void StartCommand(this SolidEdgeFramework.Application application, SolidEdgeConstants.PartCommandConstants CommandID)
+        {
+            application.StartCommand((SolidEdgeFramework.SolidEdgeCommandConstants)CommandID);
+        }
+
+        /// <summary>
+        /// Activates a specified Solid Edge command.
+        /// </summary>
+        public static void StartCommand(this SolidEdgeFramework.Application application, SolidEdgeConstants.ProfileCommandConstants CommandID)
+        {
+            application.StartCommand((SolidEdgeFramework.SolidEdgeCommandConstants)CommandID);
+        }
+
+        /// <summary>
+        /// Activates a specified Solid Edge command.
+        /// </summary>
+        public static void StartCommand(this SolidEdgeFramework.Application application, SolidEdgeConstants.ProfileHoleCommandConstants CommandID)
+        {
+            application.StartCommand((SolidEdgeFramework.SolidEdgeCommandConstants)CommandID);
+        }
+
+        /// <summary>
+        /// Activates a specified Solid Edge command.
+        /// </summary>
+        public static void StartCommand(this SolidEdgeFramework.Application application, SolidEdgeConstants.ProfilePatternCommandConstants CommandID)
+        {
+            application.StartCommand((SolidEdgeFramework.SolidEdgeCommandConstants)CommandID);
+        }
+
+        /// <summary>
+        /// Activates a specified Solid Edge command.
+        /// </summary>
+        public static void StartCommand(this SolidEdgeFramework.Application application, SolidEdgeConstants.ProfileRevolvedCommandConstants CommandID)
+        {
+            application.StartCommand((SolidEdgeFramework.SolidEdgeCommandConstants)CommandID);
+        }
+
+        /// <summary>
+        /// Activates a specified Solid Edge command.
+        /// </summary>
+        public static void StartCommand(this SolidEdgeFramework.Application application, SolidEdgeConstants.SheetMetalCommandConstants CommandID)
+        {
+            application.StartCommand((SolidEdgeFramework.SolidEdgeCommandConstants)CommandID);
+        }
+
+        /// <summary>
+        /// Activates a specified Solid Edge command.
+        /// </summary>
+        public static void StartCommand(this SolidEdgeFramework.Application application, SolidEdgeConstants.SimplifyCommandConstants CommandID)
+        {
+            application.StartCommand((SolidEdgeFramework.SolidEdgeCommandConstants)CommandID);
+        }
+
+        /// <summary>
+        /// Activates a specified Solid Edge command.
+        /// </summary>
+        public static void StartCommand(this SolidEdgeFramework.Application application, SolidEdgeConstants.StudioCommandConstants CommandID)
+        {
+            application.StartCommand((SolidEdgeFramework.SolidEdgeCommandConstants)CommandID);
+        }
+
+        /// <summary>
+        /// Activates a specified Solid Edge command.
+        /// </summary>
+        public static void StartCommand(this SolidEdgeFramework.Application application, SolidEdgeConstants.TubingCommandConstants CommandID)
+        {
+            application.StartCommand((SolidEdgeFramework.SolidEdgeCommandConstants)CommandID);
+        }
+
+        /// <summary>
+        /// Activates a specified Solid Edge command.
+        /// </summary>
+        public static void StartCommand(this SolidEdgeFramework.Application application, SolidEdgeConstants.WeldmentCommandConstants CommandID)
         {
             application.StartCommand((SolidEdgeFramework.SolidEdgeCommandConstants)CommandID);
         }
@@ -2266,6 +2065,27 @@ namespace SolidEdgeSDK.InteropServices
             {
                 return defaultValue;
             }
+        }
+
+        public static string GetComTypeFullName(object comObject)
+        {
+            if (Marshal.IsComObject(comObject) == false) throw new InvalidComObjectException();
+
+            Type type = null;
+            var dispatch = comObject as IDispatch;
+            System.Runtime.InteropServices.ComTypes.ITypeInfo typeInfo = null;
+
+            if (dispatch != null)
+            {
+                typeInfo = dispatch.GetTypeInfo(0, LOCALE_SYSTEM_DEFAULT);
+                typeInfo.GetContainingTypeLib(out ITypeLib typeLib, out int pIndex);
+                typeInfo.GetDocumentation(-1, out string typeName, out string typeDescription, out int typeHelpContext, out string typeHelpFile);
+                typeLib.GetDocumentation(-1, out string typeLibName, out string typeLibDescription, out int typeLibHelpContext, out string typeLibHelpFile);
+
+                return String.Join(".", typeLibName, typeName);
+            }
+
+            return null;
         }
 
         /// <summary>

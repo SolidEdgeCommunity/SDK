@@ -10,23 +10,7 @@
 //  - PresentationFramework.dll
 //  - WindowsBase.dll
 
-using Microsoft.Win32;
-using SolidEdgeAssembly;
-using SolidEdgeFramework;
-using SolidEdgeGeometry;
-using SolidEdgeSDK.Extensions;
-using SolidEdgeSDK.InteropServices;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
-using System.Resources;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
-using System.Text;
-using System.Threading;
 
 namespace SolidEdgeSDK.AddIn
 {

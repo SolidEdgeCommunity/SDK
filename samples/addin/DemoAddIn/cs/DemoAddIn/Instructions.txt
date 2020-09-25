@@ -1,0 +1,46 @@
+﻿[COM references]
+- All COM references in this project have "Embed Interop Types" set to True.
+- This prevents Interop.*.dll assemblies from being generated and is typically desired.
+- You are welcome to "Embed Interop Types" set to False. It does not change the code execution.
+
+[MyConstants.cs]
+- Generate new unique GUID for MyConstants.AddInGuid.
+- Update MyConstants.AddInProgId accordingly.
+- NativeResources.BMP & NativeResources.PNG should match Native.rc.
+
+[Native.rc]
+- Native images used by EdgeBar & Ribbon.
+- Must be maintained manually.
+- Execute CompileNativeRes.bat to compile Native.rc to Native.res.
+
+[Native.res]
+- Native images used by EdgeBar & Ribbon.
+- Compiled version of Native.rc.
+- <Win32Resource>Native.res</Win32Resource> in DemoAddIn.csproj.
+
+[Properties\Resources.resx & Properties\Resources.zh-CN.resx]
+- Example of how to use .NET resources for strings.
+- .NET resources can be localized.
+
+[Registration.bat]
+- Sample batch file to register the addin on a developer system.
+- Must be executed with administrator privilege.
+- Use "Developer Command Prompt for VS 20XX " shortcut so that regasm.exe resolves correctly.
+- If you change the assemlby name, modify the ASSEMBLY_NAME variable to match.
+
+[MyAddIn.cs]
+- Core addin code. Solid Edge will create an instance of this class when it loads the addin.
+- OnConnection(), OnConnectToEnvironment() & OnDisconnection() are primary entry\exit points.
+- Desired event sets can be easily attached by implementing event interface and using ComEventsManager.Attach().
+- CATID.SolidEdgeAddIn is currently specified to make the demo easy to setup.
+- When you make changes to your ribbon, you MUST increment AddInInstance.GuiVersion during OnConnection() for the changes to work correctly.
+
+[My3dRibbon.cs & My2dRibbon.cs]
+- Example of how to define a ribbon with commands.
+- When you make changes to your ribbon, you MUST increment AddInInstance.GuiVersion during OnConnection() for the changes to work correctly.
+
+[SolidEdgeSDK.cs]
+- Community provided and maintained Solid Edge SDK for C#.
+- Hosted at https://github.com/SolidEdgeCommunity/SDK.
+- You are welcome to modify this file as needed.
+- Any changes you make will be lost if you manually update from the GitHub repository.

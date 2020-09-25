@@ -4,7 +4,7 @@ Solid Edge Community SDK is a community driven SDK for Solid Edge. The goal of t
 Code will be maintained in [SolidEdgeSDK.cs](https://github.com/SolidEdgeCommunity/SDK/blob/master/src/SolidEdgeSDK.cs) and ported [SolidEdgeSDK.vb](https://github.com/SolidEdgeCommunity/SDK/blob/master/src/SolidEdgeSDK.vb) using a converter. We are currently testing the [Telerik Code Converter](https://converter.telerik.com) but are open to other alternatives.
 
 ## Legacy repositories
-The following legacy community repositories are no longer maintained and have been archived. Where it makes sense and where it is possible, the functionality in these repositories will be merged into this repository.
+The following legacy repositories are no longer maintained and have been archived. Where it makes sense and where it is possible, the functionality in these repositories will be merged into this repository.
 
 | GitHub Repository  | NuGet Package |
 | ------------- | ------------- |

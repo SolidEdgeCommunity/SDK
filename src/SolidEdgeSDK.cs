@@ -660,7 +660,7 @@ namespace SolidEdgeSDK.AddIn
                     }
                 }
             }
-
+            
             _ribbons.Add(ribbon.EnvironmentCategory, ribbon);
         }
 
@@ -2034,8 +2034,6 @@ namespace SolidEdgeSDK.InteropServices
         /// <returns></returns>
         public static T GetPropertyValue<T>(object comObject, string name)
         {
-            if (Marshal.IsComObject(comObject) == false) throw new InvalidComObjectException();
-
             var type = comObject.GetType();
             var value = type.InvokeMember(name, System.Reflection.BindingFlags.GetProperty, null, comObject, null);
 
@@ -2052,8 +2050,6 @@ namespace SolidEdgeSDK.InteropServices
         /// <returns></returns>
         public static T GetPropertyValue<T>(object comObject, string name, T defaultValue)
         {
-            if (Marshal.IsComObject(comObject) == false) throw new InvalidComObjectException();
-
             var type = comObject.GetType();
 
             try
@@ -2071,13 +2067,9 @@ namespace SolidEdgeSDK.InteropServices
         {
             if (Marshal.IsComObject(comObject) == false) throw new InvalidComObjectException();
 
-            Type type = null;
-            var dispatch = comObject as IDispatch;
-            System.Runtime.InteropServices.ComTypes.ITypeInfo typeInfo = null;
-
-            if (dispatch != null)
+            if (comObject is IDispatch dispatch)
             {
-                typeInfo = dispatch.GetTypeInfo(0, LOCALE_SYSTEM_DEFAULT);
+                var typeInfo = dispatch.GetTypeInfo(0, LOCALE_SYSTEM_DEFAULT);
                 typeInfo.GetContainingTypeLib(out ITypeLib typeLib, out int pIndex);
                 typeInfo.GetDocumentation(-1, out string typeName, out string typeDescription, out int typeHelpContext, out string typeHelpFile);
                 typeLib.GetDocumentation(-1, out string typeLibName, out string typeLibDescription, out int typeLibHelpContext, out string typeLibHelpFile);
@@ -2085,61 +2077,7 @@ namespace SolidEdgeSDK.InteropServices
                 return String.Join(".", typeLibName, typeName);
             }
 
-            return null;
-        }
-
-        /// <summary>
-        /// Using IDispatch, determine the managed type of the specified object.
-        /// </summary>
-        /// <param name="comObject"></param>
-        /// <returns></returns>
-        public static Type GetType(object comObject)
-        {
-            if (Marshal.IsComObject(comObject) == false) throw new InvalidComObjectException();
-
-            Type type = null;
-            var dispatch = comObject as IDispatch;
-            System.Runtime.InteropServices.ComTypes.ITypeInfo typeInfo = null;
-            var pTypeAttr = IntPtr.Zero;
-            var typeAttr = default(System.Runtime.InteropServices.ComTypes.TYPEATTR);
-
-            try
-            {
-                if (dispatch != null)
-                {
-                    typeInfo = dispatch.GetTypeInfo(0, LOCALE_SYSTEM_DEFAULT);
-                    typeInfo.GetTypeAttr(out pTypeAttr);
-                    typeAttr = (System.Runtime.InteropServices.ComTypes.TYPEATTR)Marshal.PtrToStructure(pTypeAttr, typeof(System.Runtime.InteropServices.ComTypes.TYPEATTR));
-
-                    // Type can technically be defined in any loaded assembly.
-                    var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-                    // Scan each assembly for a type with a matching GUID.
-                    foreach (var assembly in assemblies)
-                    {
-                        type = assembly.GetTypes()
-                            .Where(x => x.IsInterface)
-                            .Where(x => x.GUID.Equals(typeAttr.guid))
-                            .FirstOrDefault();
-
-                        if (type != null)
-                        {
-                            // Found what we're looking for so break out of the loop.
-                            break;
-                        }
-                    }
-                }
-            }
-            finally
-            {
-                if (typeInfo != null)
-                {
-                    typeInfo.ReleaseTypeAttr(pTypeAttr);
-                    Marshal.ReleaseComObject(typeInfo);
-                }
-            }
-
-            return type;
+            return "IUnknown";
         }
     }
 

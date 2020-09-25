@@ -30,16 +30,16 @@ using System.Threading;
 
 namespace SolidEdgeSDK.AddIn
 {
-    public partial class EdgeBarController : IDisposable
+    public partial class SolidEdgeAddIn
     {
-        public EdgeBarPage AddWpfPage<TControl>(EdgeBarPageConfiguration config) where TControl : System.Windows.Controls.Page, new()
+        public EdgeBarPage AddWpfEdgeBarPage<TControl>(EdgeBarPageConfiguration config) where TControl : System.Windows.Controls.Page, new()
         {
-            return AddWpfPage<TControl>(
+            return AddWpfEdgeBarPage<TControl>(
                 config: config,
                 document: null);
         }
 
-        public EdgeBarPage AddWpfPage<TControl>(EdgeBarPageConfiguration config, SolidEdgeFramework.SolidEdgeDocument document) where TControl : System.Windows.Controls.Page, new()
+        public EdgeBarPage AddWpfEdgeBarPage<TControl>(EdgeBarPageConfiguration config, SolidEdgeFramework.SolidEdgeDocument document) where TControl : System.Windows.Controls.Page, new()
         {
             uint WS_VISIBLE = 0x10000000;
             uint WS_CHILD = 0x40000000;
@@ -47,7 +47,7 @@ namespace SolidEdgeSDK.AddIn
 
             TControl control = Activator.CreateInstance<TControl>();
 
-            var edgeBarPage = AddPage(
+            var edgeBarPage = AddEdgeBarPage(
                 config: config,
                 controlHandle: IntPtr.Zero,
                 document: document);

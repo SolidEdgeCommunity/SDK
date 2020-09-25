@@ -290,7 +290,7 @@ namespace SolidEdgeSDK.AddIn
     /// <remarks>
     /// For the most part this class contains only plumbing code that generally should not need much modification.
     /// </remarks>
-    public abstract class SolidEdgeAddIn : MarshalByRefObject, SolidEdgeFramework.ISolidEdgeAddIn
+    public abstract partial class SolidEdgeAddIn : MarshalByRefObject, SolidEdgeFramework.ISolidEdgeAddIn
     {
         private static SolidEdgeAddIn _instance;
         private AppDomain _isolatedDomain;

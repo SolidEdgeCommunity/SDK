@@ -1,8 +1,6 @@
 # Solid Edge Community SDK
 Solid Edge Community SDK is a community driven SDK for Solid Edge. The goal of the SDK is to provide [SolidEdgeSDK.cs](https://github.com/SolidEdgeCommunity/SDK/blob/master/src/SolidEdgeSDK.cs) that can be included into any project.
 
-[SolidEdgeSDK.cs](https://github.com/SolidEdgeCommunity/SDK/blob/master/src/SolidEdgeSDK.cs) that can be included into any project.
-
 [SolidEdgeSDK.vb](https://github.com/SolidEdgeCommunity/SDK/blob/master/src/SolidEdgeSDK.vb) is generated using [Telerik Code Converter](https://converter.telerik.com) but is not tested or supported. If you want\need to use Visual Basic, we recommend adding [SolidEdgeSDK.cs](https://github.com/SolidEdgeCommunity/SDK/blob/master/src/SolidEdgeSDK.cs) to a separate project and adding a reference.
 
 ## Legacy projects

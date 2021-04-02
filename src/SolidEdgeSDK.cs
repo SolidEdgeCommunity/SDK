@@ -22,6 +22,17 @@
 // type libraries directly from your project or pre generate the Interop
 // Assemblies.
 
+#region WPF Support
+
+// Required references:
+//  - PresentationCore.dll
+//  - PresentationFramework.dll
+//  - WindowsBase.dll
+
+#define ENABLE_WPF_SUPPORT
+
+#endregion
+
 using SolidEdgeSDK.Extensions;
 using System;
 using System.Collections.Generic;
@@ -290,12 +301,11 @@ namespace SolidEdgeSDK.AddIn
     /// <remarks>
     /// For the most part this class contains only plumbing code that generally should not need much modification.
     /// </remarks>
-    public abstract partial class SolidEdgeAddIn : MarshalByRefObject, SolidEdgeFramework.ISolidEdgeAddIn
+    public abstract class SolidEdgeAddIn : MarshalByRefObject, SolidEdgeFramework.ISolidEdgeAddIn
     {
         private static SolidEdgeAddIn _instance;
         private AppDomain _isolatedDomain;
         private SolidEdgeFramework.ISolidEdgeAddIn _isolatedAddIn;
-        private Dictionary<Guid, Ribbon> _ribbons = new Dictionary<Guid, Ribbon>();
 
         public SolidEdgeAddIn()
         {
@@ -513,176 +523,38 @@ namespace SolidEdgeSDK.AddIn
 
         #endregion
 
-        #region Ribbon
-
-        public TRibbon AddRibbon<TRibbon>(Guid environmentCategory, bool firstTime) where TRibbon : Ribbon
+#if ENABLE_WPF_SUPPORT
+        public EdgeBarPage AddWpfEdgeBarPage<TControl>(EdgeBarPageConfiguration config, SolidEdgeFramework.SolidEdgeDocument document = null) where TControl : System.Windows.Controls.Page, new()
         {
-            TRibbon ribbon = Activator.CreateInstance<TRibbon>();
+            uint WS_VISIBLE = 0x10000000;
+            uint WS_CHILD = 0x40000000;
+            uint WS_MAXIMIZE = 0x01000000;
 
-            ribbon.EnvironmentCategory = environmentCategory;
-            ribbon.SolidEdgeAddIn = this;
-            ribbon.Initialize();
+            TControl control = Activator.CreateInstance<TControl>();
 
-            Add(ribbon, environmentCategory, firstTime);
+            var edgeBarPage = AddEdgeBarPage(
+                config: config,
+                controlHandle: IntPtr.Zero,
+                document: document);
 
-            return ribbon;
+            var hwndSource = new System.Windows.Interop.HwndSource(new System.Windows.Interop.HwndSourceParameters
+            {
+                PositionX = 0,
+                PositionY = 0,
+                Height = 0,
+                Width = 0,
+                ParentWindow = edgeBarPage.Handle,
+                WindowStyle = (int)(WS_VISIBLE | WS_CHILD | WS_MAXIMIZE)
+            })
+            {
+                RootVisual = control
+            };
+
+            edgeBarPage.ChildObject = hwndSource;
+
+            return edgeBarPage;
         }
-
-        public void Add(Ribbon ribbon, Guid environmentCategory, bool firstTime)
-        {
-            if (ribbon == null) throw new ArgumentNullException("ribbon");
-
-            // Solid Edge ST or higher.
-            var addInEx = (SolidEdgeFramework.ISEAddInEx)AddInInstance;
-
-            // Solid Edge ST7 or higher.
-            var addInEx2 = (SolidEdgeFramework.ISEAddInEx2)null;
-            //var addInEx2 = _addIn.AddInEx2;
-
-            var EnvironmentCatID = environmentCategory.ToString("B");
-
-            if (_ribbons.ContainsKey(ribbon.EnvironmentCategory))
-            {
-                throw new System.Exception(String.Format("A ribbon has already been added for environment category {0}.", ribbon.EnvironmentCategory));
-            }
-
-            if (ribbon.EnvironmentCategory.Equals(Guid.Empty))
-            {
-                throw new System.Exception(String.Format("{0} is not a valid environment category.", ribbon.EnvironmentCategory));
-            }
-
-            foreach (var tab in ribbon.Tabs)
-            {
-                foreach (var group in tab.Groups)
-                {
-                    foreach (var control in group.Controls)
-                    {
-                        // Properly format the command bar name string.
-                        var categoryName = tab.Name;
-
-                        // Properly format the command name string.
-                        var commandName = new System.Text.StringBuilder();
-
-                        // Note: The command will not be added if it the name is not unique!
-                        commandName.AppendFormat("{0}_{1}", this.Guid.ToString(), control.CommandId);
-
-                        if (control is RibbonButton)
-                        {
-                            var ribbonButton = control as RibbonButton;
-                            if (String.IsNullOrEmpty(ribbonButton.DropDownGroup) == false)
-                            {
-                                // Now append the description, tooltip, etc separated by \n.
-                                commandName.AppendFormat("\n{0}\\\\{1}\n{2}\n{3}", ribbonButton.DropDownGroup, control.Label, control.SuperTip, control.ScreenTip);
-                            }
-                            else
-                            {
-                                // Now append the description, tooltip, etc separated by \n.
-                                commandName.AppendFormat("\n{0}\n{1}\n{2}", control.Label, control.SuperTip, control.ScreenTip);
-                            }
-                        }
-                        else
-                        {
-                            // Now append the description, tooltip, etc separated by \n.
-                            commandName.AppendFormat("\n{0}\n{1}\n{2}", control.Label, control.SuperTip, control.ScreenTip);
-                        }
-
-                        // Append macro info if provided.
-                        if (!String.IsNullOrEmpty(control.Macro))
-                        {
-                            commandName.AppendFormat("\n{0}", control.Macro);
-
-                            if (!String.IsNullOrEmpty(control.MacroParameters))
-                            {
-                                commandName.AppendFormat("\n{0}", control.MacroParameters);
-                            }
-                        }
-
-                        // Assign the control's CommandName property. Mostly just for reference.
-                        control.CommandName = commandName.ToString();
-
-                        // Allocate command arrays. Please see the addin.doc in the SDK folder for details.
-                        Array commandNames = new string[] { control.CommandName };
-                        Array commandIDs = new int[] { control.CommandId };
-
-                        if (addInEx2 != null)
-                        {
-                            // Currently having an issue with SetAddInInfoEx2() in that the commandButtonStyles don't seem to apply.
-                            // Need to investigate further. For now, addInEx2 is set to null.
-
-                            categoryName = String.Format("{0}\n{1}", tab.Name, group.Name);
-                            Array commandButtonStyles = new SolidEdgeFramework.SeButtonStyle[] { control.Style };
-
-                            // ST7 or higher.
-                            addInEx2.SetAddInInfoEx2(
-                                NativeResourcesDllPath,
-                                EnvironmentCatID,
-                                categoryName,
-                                control.ImageId,
-                                -1,
-                                -1,
-                                -1,
-                                commandNames.Length,
-                                ref commandNames,
-                                ref commandIDs,
-                                ref commandButtonStyles);
-                        }
-                        else if (addInEx != null)
-                        {
-                            // ST or higher
-                            addInEx.SetAddInInfoEx(
-                                NativeResourcesDllPath,
-                                EnvironmentCatID,
-                                categoryName,
-                                control.ImageId,
-                                -1,
-                                -1,
-                                -1,
-                                commandNames.Length,
-                                ref commandNames,
-                                ref commandIDs);
-
-                            if (firstTime)
-                            {
-                                var commandBarName = String.Format("{0}\n{1}", tab.Name, group.Name);
-
-                                // Add the command bar button.
-                                SolidEdgeFramework.CommandBarButton pButton = addInEx.AddCommandBarButton(EnvironmentCatID, commandBarName, control.CommandId);
-
-                                // Set the button style.
-                                if (pButton != null)
-                                {
-                                    pButton.Style = control.Style;
-                                }
-                            }
-                        }
-
-                        control.SolidEdgeCommandId = (int)commandIDs.GetValue(0);
-                    }
-                }
-            }
-            
-            _ribbons.Add(ribbon.EnvironmentCategory, ribbon);
-        }
-
-        public Ribbon ActiveRibbon
-        {
-            get
-            {
-                var environment = this.Application.GetActiveEnvironment();
-                var envCatId = Guid.Parse(environment.CATID);
-
-                if (_ribbons.TryGetValue(envCatId, out Ribbon value))
-                {
-                    return value;
-                }
-
-                return null;
-            }
-        }
-
-        public IEnumerable<Ribbon> Ribbons { get { return _ribbons.Values; } }
-
-        #endregion
+#endif
 
         public abstract void OnConnection(SolidEdgeFramework.SeConnectMode ConnectMode);
         public abstract void OnConnectToEnvironment(Guid EnvCatID, SolidEdgeFramework.Environment environment, bool firstTime);
@@ -817,351 +689,6 @@ namespace SolidEdgeSDK.AddIn
         }
 
         public Version SolidEdgeVersion { get { return new Version(Application.Version); ; } }
-    }
-
-    public class RibbonTab
-    {
-        internal RibbonTab(Ribbon ribbon, string name)
-        {
-            Ribbon = ribbon;
-            Name = name;
-        }
-
-        public Ribbon Ribbon { get; private set; }
-        public string Name { get; private set; }
-        public RibbonGroup[] Groups { get; set; } = new RibbonGroup[] { };
-
-        public IEnumerable<RibbonControl> Controls
-        {
-            get
-            {
-                foreach (var group in this.Groups)
-                {
-                    foreach (var control in group.Controls)
-                    {
-                        yield return control;
-                    }
-                }
-            }
-        }
-
-        public IEnumerable<RibbonButton> Buttons { get { return this.Controls.OfType<RibbonButton>(); } }
-        public IEnumerable<RibbonCheckBox> CheckBoxes { get { return this.Controls.OfType<RibbonCheckBox>(); } }
-        public IEnumerable<RibbonRadioButton> RadioButtons { get { return this.Controls.OfType<RibbonRadioButton>(); } }
-
-        public override string ToString() { return Name; }
-    }
-
-    public class RibbonGroup
-    {
-        private List<RibbonControl> _controls = new List<RibbonControl>();
-
-        public RibbonGroup(string name)
-        {
-            Name = name;
-        }
-
-        public string Name { get; private set; }
-
-        public RibbonControl[] Controls { get; set; } = new RibbonControl[] { };
-
-        public IEnumerable<RibbonButton> Buttons { get { return this.Controls.OfType<RibbonButton>(); } }
-        public IEnumerable<RibbonCheckBox> CheckBoxes { get { return this.Controls.OfType<RibbonCheckBox>(); } }
-        public IEnumerable<RibbonRadioButton> RadioButtons { get { return this.Controls.OfType<RibbonRadioButton>(); } }
-
-        public override string ToString() { return Name; }
-    }
-
-    [Serializable]
-    public delegate void RibbonControlClickEventHandler(RibbonControl control);
-
-    [Serializable]
-    public delegate void RibbonControlHelpEventHandler(RibbonControl control, IntPtr hWndFrame, int helpCommandID);
-
-    /// <summary>
-    /// Abstract base class for all ribbon controls.
-    /// </summary>
-    public abstract class RibbonControl
-    {
-        internal RibbonControl(int commandId)
-        {
-            CommandId = commandId;
-        }
-
-        public bool UseDotMark { get; set; }
-
-        /// <summary>
-        /// Gets or set a value indicating whether the control is in the checked state.
-        /// </summary>
-        public bool Checked { get; set; }
-
-        /// <summary>
-        /// Gets the command id of the control.
-        /// </summary>
-        /// <remarks>
-        /// This is the command id used by OnCommand SolidEdgeFramework.AddInEvents.
-        /// </remarks>
-        public int CommandId { get; set; }
-
-        /// <summary>
-        /// Returns the generated command name used when calling SetAddInInfo().
-        /// </summary>
-        public string CommandName { get; set; }
-
-        /// <summary>
-        /// Gets or set a value indicating whether the control is enabled.
-        /// </summary>
-        public bool Enabled { get; set; } = true;
-
-        /// <summary>
-        /// Gets ribbon group that the control is assigned to.
-        /// </summary>
-        public RibbonGroup Group { get; set; }
-
-        /// <summary>
-        /// Gets or set a value referencing an image embedded into the assembly as a native resource using the NativeResourceAttribute.
-        /// </summary>
-        /// <remarks>
-        /// Changing this value after the ribbon has been initialized has no impact.
-        /// </remarks>
-        public int ImageId { get; set; }
-
-        /// <summary>
-        /// Gets or set a value indicating the label (caption) of the control.
-        /// </summary>
-        public string Label { get; set; }
-
-        /// <summary>
-        /// Gets or set a value indicating a macro (.exe) assigned to the control.
-        /// </summary>
-        public string Macro { get; set; }
-
-        /// <summary>
-        /// Gets or set a value indicating the macro (.exe) parameters assigned to the control.
-        /// </summary>
-        public string MacroParameters { get; set; }
-
-        /// <summary>
-        /// Gets or set a value indicating screentip of the control.
-        /// </summary>
-        /// <remarks>
-        /// Changing this value after the ribbon has been initialized has no impact.
-        /// </remarks>
-        public string ScreenTip { get; set; }
-
-        /// <summary>
-        /// Gets or set a value indicating whether to show the image assigned to the control.
-        /// </summary>
-        public bool ShowImage { get; set; }
-
-        /// <summary>
-        /// Gets or set a value indicating whether to show the label (caption) assigned to the control.
-        /// </summary>
-        public bool ShowLabel { get; set; }
-
-        /// <summary>
-        /// Gets the Solid Edge assigned runtime command id of the control.
-        /// </summary>
-        /// <remarks>
-        /// This is the command id used by the BeforeCommand and AfterCommand SolidEdgeFramework.ApplicationEvents. 
-        /// You also use this command id when calling SolidEdgeFramework.Application.StartCommand().
-        /// </remarks>
-        public int SolidEdgeCommandId { get; set; }
-
-        internal abstract SolidEdgeFramework.SeButtonStyle Style { get; }
-
-        /// <summary>
-        /// Gets or set a value indicating the supertip of the control.
-        /// </summary>
-        /// <remarks>
-        /// Changing this value after the ribbon has been initialized has no impact.
-        /// </remarks>
-        public string SuperTip { get; set; }
-
-        /// <summary>
-        /// Gets or set the telp URL that is shown in the browser if the user asks for help by using the F1 key.
-        /// </summary>
-        public string WebHelpURL { get; set; }
-    }
-
-    public class RibbonButton : RibbonControl
-    {
-        public RibbonButton(int id)
-            : base(id)
-        {
-        }
-
-        public RibbonButton(int id, string label, string screentip, string supertip, int imageId, RibbonButtonSize size = RibbonButtonSize.Normal)
-            : base(id)
-        {
-            Label = label;
-            ScreenTip = screentip;
-            SuperTip = supertip;
-            ImageId = imageId;
-            Size = size;
-        }
-
-        public string DropDownGroup { get; set; }
-        public RibbonButtonSize Size { get; set; } = RibbonButtonSize.Normal;
-
-        internal override SolidEdgeFramework.SeButtonStyle Style
-        {
-            get
-            {
-                var style = SolidEdgeFramework.SeButtonStyle.seButtonAutomatic;
-
-                if (Size == RibbonButtonSize.Large)
-                {
-                    style = SolidEdgeFramework.SeButtonStyle.seButtonIconAndCaptionBelow;
-                }
-                else
-                {
-                    if (ShowImage && ShowLabel)
-                    {
-                        style = SolidEdgeFramework.SeButtonStyle.seButtonIconAndCaption;
-                    }
-                    else if (ShowImage)
-                    {
-                        style = SolidEdgeFramework.SeButtonStyle.seButtonIcon;
-                    }
-                    else if (ShowLabel)
-                    {
-                        style = SolidEdgeFramework.SeButtonStyle.seButtonCaption;
-                    }
-                }
-
-                return style;
-            }
-
-        }
-    }
-
-    public class RibbonCheckBox : RibbonControl
-    {
-        public RibbonCheckBox(int id)
-            : base(id)
-        {
-        }
-
-        public RibbonCheckBox(int id, string label, string screentip, string supertip)
-            : base(id)
-        {
-            Label = label;
-            ScreenTip = screentip;
-            SuperTip = supertip;
-        }
-
-        internal override SolidEdgeFramework.SeButtonStyle Style
-        {
-            get
-            {
-                var style = SolidEdgeFramework.SeButtonStyle.seCheckButton;
-
-                if (this.ImageId >= 0)
-                {
-                    style = ShowImage == true ? SolidEdgeFramework.SeButtonStyle.seCheckButtonAndIcon : SolidEdgeFramework.SeButtonStyle.seCheckButton;
-                }
-
-                return style;
-            }
-        }
-    }
-
-    public class RibbonRadioButton : RibbonControl
-    {
-        public RibbonRadioButton(int id)
-            : base(id)
-        {
-        }
-
-        public RibbonRadioButton(int id, string label, string screentip, string supertip)
-            : base(id)
-        {
-            Label = label;
-            ScreenTip = screentip;
-            SuperTip = supertip;
-        }
-
-        internal override SolidEdgeFramework.SeButtonStyle Style { get { return SolidEdgeFramework.SeButtonStyle.seRadioButton; } }
-    }
-
-    public enum RibbonButtonSize
-    {
-        Normal,
-        Large
-    }
-
-    public abstract class Ribbon
-    {
-        public abstract void Initialize();
-
-        protected void Initialize(RibbonTab[] tabs)
-        {
-            if (Tabs.Any())
-            {
-                throw new System.Exception($"{this.GetType().FullName} has already been initialized.");
-            }
-
-            var duplicateCommandIds = tabs.SelectMany(x => x.Controls).Select(x => x.CommandId)
-                .GroupBy(x => x)
-                .Where(x => x.Count() > 1);
-
-            if (duplicateCommandIds.Any())
-            {
-                throw new System.Exception($"Duplicate command IDs detected. The duplicated command IDs are: '{String.Join(",", duplicateCommandIds.Select(x => x.Key))}'.");
-            }
-
-            Tabs = tabs;
-        }
-
-        public RibbonButton GetButton(int commandId)
-        {
-            return Buttons.FirstOrDefault(x => x.CommandId == commandId);
-        }
-
-        public RibbonCheckBox GetCheckBox(int commandId)
-        {
-            return CheckBoxes.FirstOrDefault(x => x.CommandId == commandId);
-        }
-
-        public RibbonControl GetControl(int commandId)
-        {
-            return Controls.FirstOrDefault(x => x.CommandId == commandId);
-        }
-
-        public TRibbonControl GetControl<TRibbonControl>(int commandId) where TRibbonControl : RibbonControl
-        {
-            return Controls.OfType<TRibbonControl>().FirstOrDefault(x => x.CommandId == commandId);
-        }
-
-        public RibbonRadioButton GetRadioButton(int commandId)
-        {
-            return RadioButtons.FirstOrDefault(x => x.CommandId == commandId);
-        }
-
-        public IEnumerable<RibbonControl> Controls
-        {
-            get
-            {
-                foreach (var tab in Tabs)
-                {
-                    foreach (var control in tab.Controls)
-                    {
-                        yield return control;
-                    }
-                }
-            }
-        }
-
-        public SolidEdgeAddIn SolidEdgeAddIn { get; internal set; }
-        public Guid EnvironmentCategory { get; set; }
-
-        public IEnumerable<RibbonButton> Buttons { get { return this.Controls.OfType<RibbonButton>(); } }
-        public IEnumerable<RibbonCheckBox> CheckBoxes { get { return this.Controls.OfType<RibbonCheckBox>(); } }
-        public IEnumerable<RibbonRadioButton> RadioButtons { get { return this.Controls.OfType<RibbonRadioButton>(); } }
-
-        public RibbonControl this[int commandId] { get { return this.Controls.Where(x => x.CommandId == commandId).FirstOrDefault(); } }
-        public RibbonTab[] Tabs { get; private set; } = new RibbonTab[] { };
     }
 }
 

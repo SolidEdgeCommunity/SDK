@@ -62,7 +62,6 @@
       <DependentUpon>AboutDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="MyAddIn.cs" />
-    <Compile Include="MyAddInOld.cs" />
     <Compile Include="MyCommands.cs" />
     <Compile Include="MyConstants.cs" />
     <Compile Include="MyCustomDialog.cs">

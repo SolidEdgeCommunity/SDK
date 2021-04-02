@@ -61,6 +61,17 @@ namespace DemoAddIn.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to About DemoAddIn
+        ///About DemoAddIn Screentip
+        ///About DemoAddIn Supertip.
+        /// </summary>
+        internal static string AboutCommand {
+            get {
+                return ResourceManager.GetString("AboutCommand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Solid Edge Community DemoAddIn (C#).
         /// </summary>
         internal static string AddInDescription {
@@ -70,11 +81,152 @@ namespace DemoAddIn.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Solid Edge Community Sample AddIn.
+        ///   Looks up a localized string similar to Solid Edge Community DemoAddIn (C#).
         /// </summary>
         internal static string AddInSummary {
             get {
                 return ResourceManager.GetString("AddInSummary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to __SOLIDEDGE_BACKSTAGE__.
+        /// </summary>
+        internal static string BackstageCategory {
+            get {
+                return ResourceManager.GetString("BackstageCategory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Bounding Box
+        ///Bounding Box Screentip
+        ///Bounding Box Supertip.
+        /// </summary>
+        internal static string BoundingBoxCommand {
+            get {
+                return ResourceManager.GetString("BoundingBoxCommand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Box
+        ///Box Screentip
+        ///Box Supertip.
+        /// </summary>
+        internal static string BoxCommand {
+            get {
+                return ResourceManager.GetString("BoxCommand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Camera
+        ///Camera Screentip
+        ///Camera Supertip.
+        /// </summary>
+        internal static string CameraCommand {
+            get {
+                return ResourceManager.GetString("CameraCommand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Checkbox1
+        ///Checkbox1 Screentip
+        ///Checkbox1 Supertip.
+        /// </summary>
+        internal static string Checkbox1Command {
+            get {
+                return ResourceManager.GetString("Checkbox1Command", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Checkbox2
+        ///Checkbox2 Screentip
+        ///Checkbox2 Supertip.
+        /// </summary>
+        internal static string Checkbox2Command {
+            get {
+                return ResourceManager.GetString("Checkbox2Command", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Checkbox3
+        ///Checkbox3 Screentip
+        ///Checkbox3 Supertip.
+        /// </summary>
+        internal static string Checkbox3Command {
+            get {
+                return ResourceManager.GetString("Checkbox3Command", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Command Prompt
+        ///Command Prompt Screentip
+        ///Command Prompt Supertip.
+        /// </summary>
+        internal static string CommandPromptCommand {
+            get {
+                return ResourceManager.GetString("CommandPromptCommand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Favorites
+        ///Favorites Screentip
+        ///Favorites Supertip.
+        /// </summary>
+        internal static string FavoritesCommand {
+            get {
+                return ResourceManager.GetString("FavoritesCommand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Folder
+        ///Folder Screentip
+        ///Folder Supertip.
+        /// </summary>
+        internal static string FolderCommand {
+            get {
+                return ResourceManager.GetString("FolderCommand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to GDI+
+        ///GDI+ Screentip
+        ///GDI+ Supertip.
+        /// </summary>
+        internal static string GdiPlusCommand {
+            get {
+                return ResourceManager.GetString("GdiPlusCommand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Help
+        ///Help Screentip
+        ///Help Supertip.
+        /// </summary>
+        internal static string HelpCommand {
+            get {
+                return ResourceManager.GetString("HelpCommand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Monitor
+        ///Monitor Screentip
+        ///Monitor Supertip.
+        /// </summary>
+        internal static string MonitorCommand {
+            get {
+                return ResourceManager.GetString("MonitorCommand", resourceCulture);
             }
         }
         
@@ -106,11 +258,195 @@ namespace DemoAddIn.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to DemoAddIn.
+        ///   Looks up a localized string similar to Notepad
+        ///Notepad Screentip
+        ///Notepad Supertip.
         /// </summary>
-        internal static string MyRibbon1 {
+        internal static string NotepadCommand {
             get {
-                return ResourceManager.GetString("MyRibbon1", resourceCulture);
+                return ResourceManager.GetString("NotepadCommand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to OpenGL Boxes
+        ///OpenGL Boxes Screentip
+        ///OpenGL Boxes Supertip.
+        /// </summary>
+        internal static string OpenGlBoxesCommand {
+            get {
+                return ResourceManager.GetString("OpenGlBoxesCommand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Photograph
+        ///Photograph Screentip
+        ///Photograph Supertip.
+        /// </summary>
+        internal static string PhotographCommand {
+            get {
+                return ResourceManager.GetString("PhotographCommand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Printer
+        ///Printer Screentip
+        ///Printer Supertip.
+        /// </summary>
+        internal static string PrinterCommand {
+            get {
+                return ResourceManager.GetString("PrinterCommand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Question
+        ///Question Supertip
+        ///Question Screentip.
+        /// </summary>
+        internal static string QuestionCommand {
+            get {
+                return ResourceManager.GetString("QuestionCommand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Radiobutton1
+        ///Radiobutton1 Screentip
+        ///Radiobutton1 Supertip.
+        /// </summary>
+        internal static string Radiobutton1Command {
+            get {
+                return ResourceManager.GetString("Radiobutton1Command", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Radiobutton2
+        ///Radiobutton2 Screentip
+        ///Radiobutton2 Supertip.
+        /// </summary>
+        internal static string Radiobutton2Command {
+            get {
+                return ResourceManager.GetString("Radiobutton2Command", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Radiobutton3
+        ///Radiobutton3 Screentip
+        ///Radiobutton3 Supertip.
+        /// </summary>
+        internal static string Radiobutton3Command {
+            get {
+                return ResourceManager.GetString("Radiobutton3Command", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Solid Edge Community.
+        /// </summary>
+        internal static string RibbonCaption {
+            get {
+                return ResourceManager.GetString("RibbonCaption", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Group 1.
+        /// </summary>
+        internal static string RibbonGroup1 {
+            get {
+                return ResourceManager.GetString("RibbonGroup1", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Group 2.
+        /// </summary>
+        internal static string RibbonGroup2 {
+            get {
+                return ResourceManager.GetString("RibbonGroup2", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Group 3.
+        /// </summary>
+        internal static string RibbonGroup3 {
+            get {
+                return ResourceManager.GetString("RibbonGroup3", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Group 4.
+        /// </summary>
+        internal static string RibbonGroup4 {
+            get {
+                return ResourceManager.GetString("RibbonGroup4", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Group 5.
+        /// </summary>
+        internal static string RibbonGroup5 {
+            get {
+                return ResourceManager.GetString("RibbonGroup5", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Group 6.
+        /// </summary>
+        internal static string RibbonGroup6 {
+            get {
+                return ResourceManager.GetString("RibbonGroup6", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Overlays.
+        /// </summary>
+        internal static string RibbonGroupOverlays {
+            get {
+                return ResourceManager.GetString("RibbonGroupOverlays", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Save
+        ///Save Screentip
+        ///Save Supertip.
+        /// </summary>
+        internal static string SaveCommand {
+            get {
+                return ResourceManager.GetString("SaveCommand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Search
+        ///Search Screentip
+        ///Search Supertip.
+        /// </summary>
+        internal static string SearchCommand {
+            get {
+                return ResourceManager.GetString("SearchCommand", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Tools
+        ///Tools Screentip
+        ///Tools Supertip.
+        /// </summary>
+        internal static string ToolsCommand {
+            get {
+                return ResourceManager.GetString("ToolsCommand", resourceCulture);
             }
         }
     }

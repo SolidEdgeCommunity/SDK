@@ -117,11 +117,79 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AboutCommand" xml:space="preserve">
+    <value>About DemoAddIn
+About DemoAddIn Screentip
+About DemoAddIn Supertip</value>
+  </data>
   <data name="AddInDescription" xml:space="preserve">
     <value>Solid Edge Community DemoAddIn (C#)</value>
   </data>
   <data name="AddInSummary" xml:space="preserve">
-    <value>Solid Edge Community Sample AddIn</value>
+    <value>Solid Edge Community DemoAddIn (C#)</value>
+  </data>
+  <data name="BackstageCategory" xml:space="preserve">
+    <value>__SOLIDEDGE_BACKSTAGE__</value>
+  </data>
+  <data name="BoundingBoxCommand" xml:space="preserve">
+    <value>Bounding Box
+Bounding Box Screentip
+Bounding Box Supertip</value>
+  </data>
+  <data name="BoxCommand" xml:space="preserve">
+    <value>Box
+Box Screentip
+Box Supertip</value>
+  </data>
+  <data name="CameraCommand" xml:space="preserve">
+    <value>Camera
+Camera Screentip
+Camera Supertip</value>
+  </data>
+  <data name="Checkbox1Command" xml:space="preserve">
+    <value>Checkbox1
+Checkbox1 Screentip
+Checkbox1 Supertip</value>
+  </data>
+  <data name="Checkbox2Command" xml:space="preserve">
+    <value>Checkbox2
+Checkbox2 Screentip
+Checkbox2 Supertip</value>
+  </data>
+  <data name="Checkbox3Command" xml:space="preserve">
+    <value>Checkbox3
+Checkbox3 Screentip
+Checkbox3 Supertip</value>
+  </data>
+  <data name="CommandPromptCommand" xml:space="preserve">
+    <value>Command Prompt
+Command Prompt Screentip
+Command Prompt Supertip</value>
+  </data>
+  <data name="FavoritesCommand" xml:space="preserve">
+    <value>Favorites
+Favorites Screentip
+Favorites Supertip</value>
+  </data>
+  <data name="FolderCommand" xml:space="preserve">
+    <value>Folder
+Folder Screentip
+Folder Supertip</value>
+  </data>
+  <data name="GdiPlusCommand" xml:space="preserve">
+    <value>GDI+
+GDI+ Screentip
+GDI+ Supertip</value>
+  </data>
+  <data name="HelpCommand" xml:space="preserve">
+    <value>Help
+Help Screentip
+Help Supertip</value>
+  </data>
+  <data name="MonitorCommand" xml:space="preserve">
+    <value>Monitor
+Monitor Screentip
+Monitor Supertip</value>
   </data>
   <data name="MyDocumentEdgeBarCaption1" xml:space="preserve">
     <value>DemoAddIn (Index: 1)</value>
@@ -132,7 +200,83 @@
   <data name="MyGlobalEdgeBarCaption" xml:space="preserve">
     <value>DemoAddIn</value>
   </data>
-  <data name="MyRibbon1" xml:space="preserve">
-    <value>DemoAddIn</value>
+  <data name="NotepadCommand" xml:space="preserve">
+    <value>Notepad
+Notepad Screentip
+Notepad Supertip</value>
+  </data>
+  <data name="OpenGlBoxesCommand" xml:space="preserve">
+    <value>OpenGL Boxes
+OpenGL Boxes Screentip
+OpenGL Boxes Supertip</value>
+  </data>
+  <data name="PhotographCommand" xml:space="preserve">
+    <value>Photograph
+Photograph Screentip
+Photograph Supertip</value>
+  </data>
+  <data name="PrinterCommand" xml:space="preserve">
+    <value>Printer
+Printer Screentip
+Printer Supertip</value>
+  </data>
+  <data name="QuestionCommand" xml:space="preserve">
+    <value>Question
+Question Supertip
+Question Screentip</value>
+  </data>
+  <data name="Radiobutton1Command" xml:space="preserve">
+    <value>Radiobutton1
+Radiobutton1 Screentip
+Radiobutton1 Supertip</value>
+  </data>
+  <data name="Radiobutton2Command" xml:space="preserve">
+    <value>Radiobutton2
+Radiobutton2 Screentip
+Radiobutton2 Supertip</value>
+  </data>
+  <data name="Radiobutton3Command" xml:space="preserve">
+    <value>Radiobutton3
+Radiobutton3 Screentip
+Radiobutton3 Supertip</value>
+  </data>
+  <data name="RibbonCaption" xml:space="preserve">
+    <value>Solid Edge Community</value>
+  </data>
+  <data name="RibbonGroup1" xml:space="preserve">
+    <value>Group 1</value>
+  </data>
+  <data name="RibbonGroup2" xml:space="preserve">
+    <value>Group 2</value>
+  </data>
+  <data name="RibbonGroup3" xml:space="preserve">
+    <value>Group 3</value>
+  </data>
+  <data name="RibbonGroup4" xml:space="preserve">
+    <value>Group 4</value>
+  </data>
+  <data name="RibbonGroup5" xml:space="preserve">
+    <value>Group 5</value>
+  </data>
+  <data name="RibbonGroup6" xml:space="preserve">
+    <value>Group 6</value>
+  </data>
+  <data name="RibbonGroupOverlays" xml:space="preserve">
+    <value>Overlays</value>
+  </data>
+  <data name="SaveCommand" xml:space="preserve">
+    <value>Save
+Save Screentip
+Save Supertip</value>
+  </data>
+  <data name="SearchCommand" xml:space="preserve">
+    <value>Search
+Search Screentip
+Search Supertip</value>
+  </data>
+  <data name="ToolsCommand" xml:space="preserve">
+    <value>Tools
+Tools Screentip
+Tools Supertip</value>
   </data>
 </root>

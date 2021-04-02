@@ -14,8 +14,7 @@ using System.Windows.Forms;
 namespace DemoAddIn
 {
     [Guid(MyConstants.AddInGuid), ProgId(MyConstants.AddInProgId), ComVisible(true)]
-    //[AddInImplementedCategory(CATID.SolidEdgeAddIn)]  // Non OEM addin
-    [AddInImplementedCategory(CATID.SolidEdgeOEMAddIn)] // OEM addin. You must update OEM.ini to match the MyConstants.AddInGuid.
+    [AddInImplementedCategory(CATID.SolidEdgeAddIn)]
     [AddInEnvironmentCategory(CATID.SEApplication)]
     [AddInEnvironmentCategory(CATID.SEAllDocumentEnvrionments)]
     [AddInCulture("en-US")]

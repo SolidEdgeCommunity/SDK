@@ -1,7 +1,9 @@
 # Solid Edge Community SDK
-Solid Edge Community SDK is a community driven SDK for Solid Edge. The goal of the SDK is to provide [SolidEdgeSDK.cs](https://github.com/SolidEdgeCommunity/SDK/blob/master/src/SolidEdgeSDK.cs) | [SolidEdgeSDK.vb](https://github.com/SolidEdgeCommunity/SDK/blob/master/src/SolidEdgeSDK.vb) that can be included into any project.
+Solid Edge Community SDK is a community driven SDK for Solid Edge. The goal of the SDK is to provide [SolidEdgeSDK.cs](https://github.com/SolidEdgeCommunity/SDK/blob/master/src/SolidEdgeSDK.cs) that can be included into any project.
 
-Code will be maintained in [SolidEdgeSDK.cs](https://github.com/SolidEdgeCommunity/SDK/blob/master/src/SolidEdgeSDK.cs) and ported [SolidEdgeSDK.vb](https://github.com/SolidEdgeCommunity/SDK/blob/master/src/SolidEdgeSDK.vb) using a converter. We are currently testing the [Telerik Code Converter](https://converter.telerik.com) but are open to other alternatives.
+[SolidEdgeSDK.cs](https://github.com/SolidEdgeCommunity/SDK/blob/master/src/SolidEdgeSDK.cs) that can be included into any project.
+
+[SolidEdgeSDK.vb](https://github.com/SolidEdgeCommunity/SDK/blob/master/src/SolidEdgeSDK.vb) is generated using [Telerik Code Converter](https://converter.telerik.com) but is not tested or supported. If you want\need to use Visual Basic, we recommend adding [SolidEdgeSDK.cs](https://github.com/SolidEdgeCommunity/SDK/blob/master/src/SolidEdgeSDK.cs) to a separate project and adding a reference.
 
 ## Legacy projects
 The following legacy repositories and NuGet packages are no longer maintained and have been archived. Where it makes sense and where it is possible, the functionality in these repositories will be merged into this repository.

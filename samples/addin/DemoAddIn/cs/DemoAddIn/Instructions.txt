@@ -18,7 +18,8 @@
 - Compiled version of Native.rc.
 - <Win32Resource>Native.res</Win32Resource> in DemoAddIn.csproj.
 
-[Properties\Resources.resx & Properties\Resources.zh-CN.resx]
+[Properties\Resources.resx]
+[Properties\Resources.zh-CN.resx]
 - Example of how to use .NET resources for strings.
 - .NET resources can be localized.
 

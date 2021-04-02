@@ -50,22 +50,22 @@ namespace DemoAddIn
         {
             public const int BoundingBox_32 = 6000;
             public const int Boxes_32 = 6001;
-            public const int Box_32 = 6002;
-            public const int Camera_32 = 6003;
-            public const int CommandPrompt_32 = 6004;
-            public const int EdgeBar_20 = 6005;
-            public const int Favorites_32 = 6006;
-            public const int Folder_16 = 6007;
+            public const int Box_32x32 = 6002;
+            public const int Camera_32x32 = 6003;
+            public const int CommandPrompt_32x32 = 6004;
+            public const int EdgeBar_20x20 = 6005;
+            public const int Favorites_32x32 = 6006;
+            public const int Folder_16x16 = 6007;
             public const int GdiPlus_32 = 6008;
-            public const int Help_32 = 6009;
-            public const int Monitor_16 = 6010;
-            public const int Notepad_32 = 6011;
-            public const int Photograph_32 = 6012;
-            public const int Printer_32 = 6013;
-            public const int Question_32 = 6014;
-            public const int Save_16 = 6015;
-            public const int Search_32 = 6016;
-            public const int Tools_32 = 6017;
+            public const int Help_32x32 = 6009;
+            public const int Monitor_16x16 = 6010;
+            public const int Notepad_32x32 = 6011;
+            public const int Photograph_32x32 = 6012;
+            public const int Printer_32x32 = 6013;
+            public const int Question_32x32 = 6014;
+            public const int Save_16x16 = 6015;
+            public const int Search_32x32 = 6016;
+            public const int Tools_32x32 = 6017;
         }
     }
 }

@@ -20,7 +20,7 @@ set REGASM_X64="%SystemRoot%\Microsoft.NET\Framework64\v4.0.30319\RegAsm.exe"
 
 CLS
 
-WHOAMI /Groups | FIND "12288" >NUL
+WHOAMI /Groups | FIND "S-1-16-12288" >NUL
 IF ERRORLEVEL 1 (
 	ECHO This batch file requires elevated privileges.
 	EXIT /B 1

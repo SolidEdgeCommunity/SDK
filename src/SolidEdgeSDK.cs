@@ -29,7 +29,7 @@
 //  - PresentationFramework.dll
 //  - WindowsBase.dll
 
-#define ENABLE_WPF_SUPPORT
+//#define ENABLE_WPF_SUPPORT
 
 #endregion
 

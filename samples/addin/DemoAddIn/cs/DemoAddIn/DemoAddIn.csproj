@@ -76,6 +76,7 @@
     <Compile Include="MyDocumentEdgeBarControl.Designer.cs">
       <DependentUpon>MyDocumentEdgeBarControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="MyEdgeBarPage.cs" />
     <Compile Include="MyGlobalEdgeBarControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -83,6 +84,12 @@
       <DependentUpon>MyGlobalEdgeBarControl.cs</DependentUpon>
     </Compile>
     <Compile Include="MyViewOverlay3D.cs" />
+    <Compile Include="NativeMessageEdgeBarControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="NativeMessageEdgeBarControl.Designer.cs">
+      <DependentUpon>NativeMessageEdgeBarControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.zh-CN.Designer.cs">
       <DependentUpon>Resources.zh-CN.resx</DependentUpon>
@@ -107,6 +114,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="MyGlobalEdgeBarControl.resx">
       <DependentUpon>MyGlobalEdgeBarControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NativeMessageEdgeBarControl.resx">
+      <DependentUpon>NativeMessageEdgeBarControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.zh-CN.resx">
       <Generator>ResXFileCodeGenerator</Generator>

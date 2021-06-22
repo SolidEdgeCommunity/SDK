@@ -265,7 +265,7 @@ namespace DemoAddIn
             {
                 // .NET WinForm UserControl Example
                 {
-                    var edgeBarPage1 = AddWinFormEdgeBarPage<DemoAddIn.MyDocumentEdgeBarControl>(
+                    var edgeBarPage1 = AddWinFormEdgeBarPage<DemoAddIn.MyEdgeBarPage, DemoAddIn.MyDocumentEdgeBarControl>(
                         new EdgeBarPageConfiguration
                         {
                             Caption = Resources.MyDocumentEdgeBarCaption1,
@@ -281,50 +281,69 @@ namespace DemoAddIn
                     var myDocumentEdgeBarControl = (DemoAddIn.MyDocumentEdgeBarControl)edgeBarPage1.ChildObject;
                     myDocumentEdgeBarControl.Application = Application;
                     myDocumentEdgeBarControl.Document = document;
+                    myDocumentEdgeBarControl.EdgeBarPage = edgeBarPage1;
+                }
+
+                {
+                    var edgeBarPage2 = AddWinFormEdgeBarPage<DemoAddIn.MyEdgeBarPage, DemoAddIn.NativeMessageEdgeBarControl>(
+                        new EdgeBarPageConfiguration
+                        {
+                            Caption = "Native Messages",
+                            Index = 2,
+                            NativeImageId = NativeResources.PNG.EdgeBar_20x20,
+                            NativeResourcesDllPath = this.NativeResourcesDllPath,
+                            Title = "Native Messages",
+                            Tootip = "Native Messages"
+                        },
+                        document: document);
+
+                    // edgeBarPage1.ChildObject is an instance of DemoAddIn.MyDocumentEdgeBarControl.
+                    var myDocumentEdgeBarControl = (DemoAddIn.NativeMessageEdgeBarControl)edgeBarPage2.ChildObject;
+                    myDocumentEdgeBarControl.EdgeBarPage = edgeBarPage2;
                 }
 
                 // .NET WPF Page Example
-                {
-                    var edgeBarPage2 = AddWpfEdgeBarPage<DemoAddIn.WPF.MyWpfEdgeBarPage>(new EdgeBarPageConfiguration
-                    {
-                        Caption = Resources.MyDocumentEdgeBarCaption2,
-                        Index = 2,
-                        NativeImageId = NativeResources.PNG.EdgeBar_20x20,
-                        NativeResourcesDllPath = this.NativeResourcesDllPath,
-                        Title = Resources.MyDocumentEdgeBarCaption2,
-                        Tootip = Resources.MyDocumentEdgeBarCaption2
-                    },
-                    document: document);
+                //{
+                //    var edgeBarPage2 = AddWpfEdgeBarPage<DemoAddIn.WPF.MyWpfEdgeBarPage>(new EdgeBarPageConfiguration
+                //    {
+                //        Caption = Resources.MyDocumentEdgeBarCaption2,
+                //        Index = 2,
+                //        NativeImageId = NativeResources.PNG.EdgeBar_20x20,
+                //        NativeResourcesDllPath = this.NativeResourcesDllPath,
+                //        Title = Resources.MyDocumentEdgeBarCaption2,
+                //        Tootip = Resources.MyDocumentEdgeBarCaption2
+                //    },
+                //    document: document);
 
-                    // edgeBarPage2.ChildObject is an instance of System.Windows.Interop.HwndSource.
-                    // edgeBarPage2.ChildObject.RootVisual is an instance of DemoAddIn.WPF.MyWpfEdgeBarPage.
-                    var hwndSource = (System.Windows.Interop.HwndSource)edgeBarPage2.ChildObject;
-                    var myWpfEdgeBarPage = (DemoAddIn.WPF.MyWpfEdgeBarPage)hwndSource.RootVisual;
-                }
+                //    // edgeBarPage2.ChildObject is an instance of System.Windows.Interop.HwndSource.
+                //    // edgeBarPage2.ChildObject.RootVisual is an instance of DemoAddIn.WPF.MyWpfEdgeBarPage.
+                //    var hwndSource = (System.Windows.Interop.HwndSource)edgeBarPage2.ChildObject;
+                //    var myWpfEdgeBarPage = (DemoAddIn.WPF.MyWpfEdgeBarPage)hwndSource.RootVisual;
+                //}
             }
             else
             {
-                // .NET WinForm UserControl Example
-                {
-                    // Caution: ISEAddInEdgeBarEventsEx.AddPage(null) will be called multiple times.
-                    // We only want to add a global page once.
-                    if (this.GlobalEdgeBarPages.Any() == false)
-                    {
-                        var edgeBarPage1 = AddWinFormEdgeBarPage<DemoAddIn.MyGlobalEdgeBarControl>(new EdgeBarPageConfiguration
-                        {
-                            Caption = Resources.MyGlobalEdgeBarCaption,
-                            Index = 1,
-                            NativeImageId = NativeResources.PNG.EdgeBar_20x20,
-                            NativeResourcesDllPath = this.NativeResourcesDllPath,
-                            Title = Resources.MyGlobalEdgeBarCaption,
-                            Tootip = Resources.MyGlobalEdgeBarCaption
-                        });
+                //// .NET WinForm UserControl Example
+                //{
+                //    // Caution: ISEAddInEdgeBarEventsEx.AddPage(null) will be called multiple times.
+                //    // We only want to add a global page once.
+                //    if (this.GlobalEdgeBarPages.Any() == false)
+                //    {
+                //        var edgeBarPage1 = AddWinFormEdgeBarPage<DemoAddIn.MyGlobalEdgeBarControl>(new EdgeBarPageConfiguration
+                //        {
+                //            Caption = Resources.MyGlobalEdgeBarCaption,
+                //            Index = 1,
+                //            NativeImageId = NativeResources.PNG.EdgeBar_20x20,
+                //            NativeResourcesDllPath = this.NativeResourcesDllPath,
+                //            Title = Resources.MyGlobalEdgeBarCaption,
+                //            Tootip = Resources.MyGlobalEdgeBarCaption
+                //        });
 
-                        // edgeBarPage1.ChildObject is an instance of DemoAddIn.MyGlobalEdgeBarControl.
-                        var myGlobalEdgeBarControl = (DemoAddIn.MyGlobalEdgeBarControl)edgeBarPage1.ChildObject;
-                        myGlobalEdgeBarControl.Application = Application;
-                    }
-                }
+                //        // edgeBarPage1.ChildObject is an instance of DemoAddIn.MyGlobalEdgeBarControl.
+                //        var myGlobalEdgeBarControl = (DemoAddIn.MyGlobalEdgeBarControl)edgeBarPage1.ChildObject;
+                //        myGlobalEdgeBarControl.Application = Application;
+                //    }
+                //}
             }
         }
 

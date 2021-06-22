@@ -12,7 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Reflection;
-
+using SolidEdgeSDK.AddIn;
 
 namespace DemoAddIn
 {
@@ -131,6 +131,7 @@ namespace DemoAddIn
             }
         }
 
+        public EdgeBarPage EdgeBarPage { get; set; }
         private ComEventsManager ComEventsManager { get; set; }
     }
 }

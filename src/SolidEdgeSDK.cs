@@ -132,6 +132,10 @@ namespace SolidEdgeSDK.AddIn
         private bool _disposed = false;
         private IntPtr _hWndChildWindow = IntPtr.Zero;
 
+        public EdgeBarPage()
+        {
+        }
+
         public EdgeBarPage(IntPtr hWnd, int index = 0)
         {
             if (hWnd == IntPtr.Zero) throw new System.ArgumentException($"{nameof(hWnd)} cannot be IntPtr.Zero.");
@@ -165,7 +169,7 @@ namespace SolidEdgeSDK.AddIn
             }
         }
 
-        public int Index { get; private set; }
+        public int Index { get; set; }
         public SolidEdgeFramework.SolidEdgeDocument Document { get; set; }
         public virtual bool Visible { get; set; } = true;
 
@@ -408,18 +412,22 @@ namespace SolidEdgeSDK.AddIn
 
         #region EdgeBar
 
-        public EdgeBarPage AddWinFormEdgeBarPage<TControl>(EdgeBarPageConfiguration config) where TControl : System.Windows.Forms.Control, new()
+        public TEdgeBarPage AddWinFormEdgeBarPage<TEdgeBarPage, TControl>(EdgeBarPageConfiguration config)
+            where TEdgeBarPage : EdgeBarPage, new()
+            where TControl : System.Windows.Forms.Control, new()
         {
-            return AddWinFormEdgeBarPage<TControl>(
+            return AddWinFormEdgeBarPage<TEdgeBarPage, TControl>(
                 config: config,
                 document: null);
         }
 
-        public EdgeBarPage AddWinFormEdgeBarPage<TControl>(EdgeBarPageConfiguration config, SolidEdgeFramework.SolidEdgeDocument document) where TControl : System.Windows.Forms.Control, new()
+        public TEdgeBarPage AddWinFormEdgeBarPage<TEdgeBarPage, TControl>(EdgeBarPageConfiguration config, SolidEdgeFramework.SolidEdgeDocument document)
+            where TEdgeBarPage : EdgeBarPage, new()
+            where TControl : System.Windows.Forms.Control, new()
         {
             TControl control = Activator.CreateInstance<TControl>();
 
-            var edgeBarPage = AddEdgeBarPage(
+            var edgeBarPage = AddEdgeBarPage<TEdgeBarPage>(
                 config: config,
                 controlHandle: control.Handle,
                 document: document);
@@ -429,7 +437,8 @@ namespace SolidEdgeSDK.AddIn
             return edgeBarPage;
         }
 
-        public EdgeBarPage AddEdgeBarPage(EdgeBarPageConfiguration config, IntPtr controlHandle, SolidEdgeFramework.SolidEdgeDocument document)
+        public TEdgeBarPage AddEdgeBarPage<TEdgeBarPage>(EdgeBarPageConfiguration config, IntPtr controlHandle, SolidEdgeFramework.SolidEdgeDocument document)
+            where TEdgeBarPage : EdgeBarPage, new()
         {
             if (config == null) throw new ArgumentNullException(nameof(config));
 
@@ -447,11 +456,11 @@ namespace SolidEdgeSDK.AddIn
                 nOptions: options,
                 Direction: direction);
 
-            var edgeBarPage = new EdgeBarPage(new IntPtr(hWndEdgeBarPage), config.Index)
-            {
-                ChildWindowHandle = controlHandle,
-                Document = document
-            };
+            var edgeBarPage = new TEdgeBarPage();
+            edgeBarPage.AssignHandle(new IntPtr(hWndEdgeBarPage));
+            edgeBarPage.Index = config.Index;
+            edgeBarPage.ChildWindowHandle = controlHandle;
+            edgeBarPage.Document = document;
 
             EdgeBarPages.Add(edgeBarPage);
 
